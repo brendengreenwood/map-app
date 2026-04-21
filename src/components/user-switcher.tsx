@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronsUpDown, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { ChevronsUpDown, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useUsers } from '@/hooks/use-users';
 import type { UserType } from '@/hooks/use-users';
 import { cn } from '@/lib/utils';

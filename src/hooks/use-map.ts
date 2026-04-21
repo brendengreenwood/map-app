@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { getClusters, getExpansionZoom, getAllFeatures } from '@/worker-client';
-import { CARTO_URLS, sproutTransformStyle } from '@/lib/map-styles';
+import { CARTO_URLS, applySproutTheme } from '@/lib/map-styles';
 import type { ResolvedTheme } from '@/hooks/use-users';
 
 // Sprout-themed data layer colors
@@ -143,12 +143,12 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
       maxZoom: 18,
       fadeDuration: 0,
       attributionControl: false,
-      transformStyle: sproutTransformStyle(theme),
     });
 
     map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 
     map.on('load', () => {
+      applySproutTheme(map, theme);
       addLayers(map, false);
       map.on('moveend', updateClusters);
       map.on('zoomend', updateClusters);
@@ -208,8 +208,9 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
     const map = mapRef.current;
     if (!map) return;
     const cartoUrl = newTheme === 'dark' ? CARTO_URLS.dark : CARTO_URLS.light;
-    map.setStyle(cartoUrl, { transformStyle: sproutTransformStyle(newTheme) });
+    map.setStyle(cartoUrl);
     map.once('style.load', () => {
+      applySproutTheme(map, newTheme);
       addLayers(map, heatmapEnabled.current);
       if (!clustersEnabled.current) {
         map.setLayoutProperty('cluster-circles', 'visibility', 'none');

@@ -100,7 +100,7 @@ export async function fetchUsers(): Promise<{ users: UserRow[] }> {
   return res.json();
 }
 
-export async function createUser(user: { id: string; name: string; types?: UserType[]; preferences?: Record<string, unknown> }): Promise<UserRow> {
+export async function createUser(user: { id: string; name: string; types?: UserType[]; preferences?: Record<string, unknown> | { theme: string } }): Promise<UserRow> {
   const res = await fetch(`${API_URL}/api/users`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -297,7 +297,7 @@ export async function fetchCompetitors(): Promise<{ competitors: CompetitorRow[]
 }
 
 export async function createCompetitor(competitor: {
-  id: string; name: string; lng: number; lat: number;
+  id: string; name: string; lng?: number | null; lat?: number | null;
   address?: string; commodities?: string[];
 }): Promise<CompetitorRow> {
   const res = await fetch(`${API_URL}/api/competitors`, {
