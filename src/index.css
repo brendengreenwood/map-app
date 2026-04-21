@@ -7,7 +7,7 @@
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    --font-sans: 'HelveticaNowForCargill', 'Geist Variable', Helvetica, system-ui, sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +48,117 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * Sprout Design System — primitive color tokens
+ * Source: sprt-css.css (Cargill/Sprout)
+ * These are referenced by the light/dark theme mappings below.
+ */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    /* Greens */
+    --sprout-green-100: oklch(0.976 0.016 121.951);
+    --sprout-green-200: oklch(0.872 0.127 127.831);
+    --sprout-green-300: oklch(0.688 0.144 127.928);
+    --sprout-green-400: oklch(0.536 0.146 150.604);
+    --sprout-green-700: oklch(0.437 0.118 150.881);
+    --sprout-green-800: oklch(0.339 0.088 151.645);
+    --sprout-green-900: oklch(0.247 0.062 153.356);
+
+    /* Neutrals */
+    --sprout-neutral-100: oklch(0.966 0.002 148.134);
+    --sprout-neutral-200: oklch(0.93 0.001 200.941);
+    --sprout-neutral-300: oklch(0.896 0.003 166.808);
+    --sprout-neutral-400: oklch(0.714 0.006 170.925);
+    --sprout-neutral-500: oklch(0.562 0.01 161.396);
+    --sprout-neutral-600: oklch(0.481 0.012 164.686);
+    --sprout-neutral-700: oklch(0.396 0.013 167.29);
+    --sprout-neutral-900: oklch(0.26 0.018 165.573);
+    --sprout-neutral-1000: oklch(0.213 0.021 162.278);
+
+    /* Emphasis */
+    --sprout-ruby-red-100: oklch(0.652 0.185 24.115);
+    --sprout-ruby-red-500: oklch(0.523 0.206 25.843);
+    --sprout-midnight-blue-500: oklch(0.321 0.104 254.513);
+    --sprout-sky-blue-500: oklch(0.81 0.125 226.537);
+    --sprout-bright-yellow-500: oklch(0.836 0.164 81.055);
+    --sprout-vibrant-purple-500: oklch(0.606 0.219 280.844);
+    --sprout-vibrant-purple-100: oklch(0.838 0.085 287.405);
 }
 
+/*
+ * Light theme — Sprout green-tinted, Cargill branded
+ * Maps sprout palette semantic tokens → shadcn custom properties
+ */
+:root {
+    --background: var(--sprout-green-100);              /* green-100: page bg */
+    --foreground: var(--sprout-neutral-1000);            /* neutral-1000: primary text */
+    --card: oklch(1 0 0);                               /* white: card surfaces */
+    --card-foreground: var(--sprout-neutral-1000);
+    --popover: oklch(1 0 0);
+    --popover-foreground: var(--sprout-neutral-1000);
+    --primary: var(--sprout-green-400);                  /* green-400: brand primary */
+    --primary-foreground: oklch(1 0 0);                  /* white on green */
+    --secondary: var(--sprout-neutral-100);              /* neutral-100: subtle bg */
+    --secondary-foreground: var(--sprout-neutral-1000);
+    --muted: var(--sprout-neutral-100);
+    --muted-foreground: var(--sprout-neutral-500);       /* neutral-500: subdued text */
+    --accent: var(--sprout-green-100);                   /* green-100: accent tint */
+    --accent-foreground: var(--sprout-green-900);        /* green-900: accent text */
+    --destructive: var(--sprout-ruby-red-500);           /* ruby-red-500: errors */
+    --border: var(--sprout-neutral-300);                 /* neutral-300: borders */
+    --input: var(--sprout-neutral-400);                  /* neutral-400: input borders */
+    --ring: var(--sprout-green-400);                     /* green-400: focus rings */
+    --chart-1: var(--sprout-green-400);
+    --chart-2: var(--sprout-midnight-blue-500);
+    --chart-3: var(--sprout-bright-yellow-500);
+    --chart-4: var(--sprout-ruby-red-500);
+    --chart-5: var(--sprout-vibrant-purple-500);
+    --radius: 0.625rem;
+    --sidebar: oklch(1 0 0);                            /* white: sidebar surface */
+    --sidebar-foreground: var(--sprout-neutral-1000);
+    --sidebar-primary: var(--sprout-green-400);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: var(--sprout-green-100);
+    --sidebar-accent-foreground: var(--sprout-green-900);
+    --sidebar-border: var(--sprout-neutral-300);
+    --sidebar-ring: var(--sprout-green-400);
+}
+
+/*
+ * Dark theme — Sprout dark mode
+ * Primary flips to green-200 (soft green on dark bg)
+ */
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: var(--sprout-neutral-900);             /* neutral-900: dark page bg */
+    --foreground: oklch(1 0 0);                          /* white: primary text */
+    --card: var(--sprout-neutral-1000);                  /* neutral-1000: card surfaces */
+    --card-foreground: oklch(1 0 0);
+    --popover: var(--sprout-neutral-1000);
+    --popover-foreground: oklch(1 0 0);
+    --primary: var(--sprout-green-200);                  /* green-200: brand primary (light on dark) */
+    --primary-foreground: var(--sprout-neutral-1000);    /* dark text on light green */
+    --secondary: var(--sprout-neutral-700);              /* neutral-700: subtle bg */
+    --secondary-foreground: oklch(1 0 0);
+    --muted: var(--sprout-neutral-700);
+    --muted-foreground: var(--sprout-neutral-400);       /* neutral-400: subdued text */
+    --accent: var(--sprout-neutral-700);                 /* neutral-700: accent bg */
+    --accent-foreground: var(--sprout-green-200);        /* green-200: accent text */
+    --destructive: var(--sprout-ruby-red-100);           /* ruby-red-100: lighter red for dark */
+    --border: var(--sprout-neutral-700);                 /* neutral-700: borders */
+    --input: var(--sprout-neutral-500);                  /* neutral-500: input borders */
+    --ring: var(--sprout-green-200);                     /* green-200: focus rings */
+    --chart-1: var(--sprout-green-200);
+    --chart-2: var(--sprout-sky-blue-500);
+    --chart-3: var(--sprout-bright-yellow-500);
+    --chart-4: var(--sprout-ruby-red-100);
+    --chart-5: var(--sprout-vibrant-purple-100);
+    --sidebar: var(--sprout-neutral-1000);               /* neutral-1000: sidebar surface */
+    --sidebar-foreground: oklch(1 0 0);
+    --sidebar-primary: var(--sprout-green-200);
+    --sidebar-primary-foreground: var(--sprout-neutral-1000);
+    --sidebar-accent: var(--sprout-neutral-700);
+    --sidebar-accent-foreground: var(--sprout-green-200);
+    --sidebar-border: var(--sprout-neutral-700);
+    --sidebar-ring: var(--sprout-green-200);
 }
 
 @layer base {
