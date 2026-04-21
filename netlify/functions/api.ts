@@ -1,14 +1,5 @@
 import type { Context } from '@netlify/functions';
-import { getDb, initSchema } from './db.js';
-
-let schemaReady = false;
-
-async function ensureSchema() {
-  if (!schemaReady) {
-    await initSchema();
-    schemaReady = true;
-  }
-}
+import sql, { initSchema } from './db.js';
 
 // ── Helpers ──
 
@@ -32,7 +23,6 @@ function parsePath(url: string) {
 // ── Enrichment helpers ──
 
 async function enrichProducer(row: Record<string, unknown>) {
-  const sql = getDb();
   const id = row.id as string;
   const commodities = await sql`SELECT commodity FROM producer_commodities WHERE producer_id = ${id}`;
   const assignments = await sql`SELECT originator_user_id FROM producer_assignments WHERE producer_id = ${id}`;
@@ -46,7 +36,6 @@ async function enrichProducer(row: Record<string, unknown>) {
 }
 
 async function enrichCompetitor(row: Record<string, unknown>) {
-  const sql = getDb();
   const id = row.id as string;
   const commodities = await sql`SELECT commodity FROM competitor_commodities WHERE competitor_id = ${id}`;
   return {
@@ -56,7 +45,6 @@ async function enrichCompetitor(row: Record<string, unknown>) {
 }
 
 async function enrichElevator(row: Record<string, unknown>) {
-  const sql = getDb();
   const id = row.id as string;
   const commodities = await sql`SELECT commodity FROM elevator_commodities WHERE elevator_id = ${id}`;
   return {
@@ -72,9 +60,8 @@ function parseUserRow(r: Record<string, unknown>) {
 // ═══════════════════════════════════════════════════════════════════
 
 export default async (req: Request, _context: Context) => {
-  await ensureSchema();
+  await initSchema();
 
-  const sql = getDb();
   const method = req.method;
   const path = parsePath(req.url);
   const url = new URL(req.url);
