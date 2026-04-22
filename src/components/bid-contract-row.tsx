@@ -45,9 +45,11 @@ function PricingField({
 function WindowRow({
   window: w,
   pricing,
+  onRevise,
 }: {
   window: DeliveryWindow;
   pricing: WindowPricing;
+  onRevise?: () => void;
 }) {
   return (
     <div
@@ -79,7 +81,7 @@ function WindowRow({
           <Eye data-icon="inline-start" />
           View
         </Button>
-        <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" onClick={onRevise}>
           <Pencil data-icon="inline-start" />
           Revise
         </Button>
@@ -95,6 +97,7 @@ interface BidContractRowProps {
   expanded: boolean;
   onToggle: () => void;
   onRevise: () => void;
+  onReviseWindow?: (windowCode: string) => void;
 }
 
 export function BidContractRow({
@@ -102,6 +105,7 @@ export function BidContractRow({
   expanded,
   onToggle,
   onRevise,
+  onReviseWindow,
 }: BidContractRowProps) {
   const p = PRICING_DATA[contract.code];
   const windows = DELIVERY_WINDOWS[contract.code] ?? [];
@@ -172,6 +176,7 @@ export function BidContractRow({
                 key={w.code}
                 window={w}
                 pricing={getWindowPricing(contract.code, w.code)}
+                onRevise={() => onReviseWindow?.(w.code)}
               />
             ))}
           </div>

@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "map-app-storybook": {
+      "url": "http://localhost:6006/mcp"
+    }
+  }
+}

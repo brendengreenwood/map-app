@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Trash2, Plus, Wheat, ChevronRight, ChevronLeft, X, MapPin } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
+import { toast } from 'sonner';
 import {
   fetchProducers, createProducer, deleteProducer, type ProducerRow,
 } from '@/lib/api';
@@ -35,6 +36,8 @@ export default function ProducersPage() {
   const [producers, setProducers] = useState<ProducerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Sheet state
   const [open, setOpen] = useState(false);
@@ -108,17 +111,26 @@ export default function ProducersPage() {
         locations: validLocations.length ? validLocations : undefined,
       });
       setOpen(false);
+      toast.success('Producer created');
       reload();
-    } catch {
-      setError('Failed to create producer');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to create producer');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    await deleteProducer(id);
-    reload();
+    setDeletingId(id);
+    try {
+      await deleteProducer(id);
+      toast.success('Producer deleted');
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete producer');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const addLocation = () => setLocations((prev) => [...prev, emptyLocation()]);
@@ -221,8 +233,8 @@ export default function ProducersPage() {
                       {new Date(p.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(p.id)}>
-                        <Trash2 />
+                      <Button variant="ghost" size="icon" className="text-destructive" disabled={deletingId === p.id} onClick={() => handleDelete(p.id)}>
+                        {deletingId === p.id ? <Spinner /> : <Trash2 />}
                       </Button>
                     </TableCell>
                   </TableRow>

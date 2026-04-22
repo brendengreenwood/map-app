@@ -1,15 +1,5 @@
 import Supercluster from 'supercluster';
-import type { Feature, Point } from 'geojson';
-
-interface PointProperties {
-  id: number;
-  name?: string;
-  category?: string;
-  value?: number;
-  [key: string]: unknown;
-}
-
-type PointFeature = Feature<Point, PointProperties>;
+import type { PointFeature, PointProperties, WorkerRequest, WorkerResponse } from './worker-types';
 
 let cluster: Supercluster<PointProperties> | null = null;
 let allFeatures: PointFeature[] = [];
@@ -154,14 +144,18 @@ function generatePoints(count: number): PointFeature[] {
   return features;
 }
 
+function respond(msg: WorkerResponse) {
+  self.postMessage(msg);
+}
+
 // Message handler
-self.onmessage = (e: MessageEvent) => {
-  const { type, payload, id } = e.data;
+self.onmessage = (e: MessageEvent<WorkerRequest>) => {
+  const msg = e.data;
 
   try {
-    switch (type) {
+    switch (msg.type) {
       case 'load-geojson': {
-        const data = JSON.parse(payload);
+        const data = JSON.parse(msg.payload);
         const features: PointFeature[] = [];
 
         if (data.type === 'FeatureCollection') {
@@ -175,55 +169,54 @@ self.onmessage = (e: MessageEvent) => {
         }
 
         initCluster(features);
-        self.postMessage({ type: 'loaded', id, featureCount: features.length });
+        respond({ type: 'loaded', id: msg.id, featureCount: features.length });
         break;
       }
 
       case 'load-csv': {
-        const features = parseCSV(payload);
+        const features = parseCSV(msg.payload);
         initCluster(features);
-        self.postMessage({ type: 'loaded', id, featureCount: features.length });
+        respond({ type: 'loaded', id: msg.id, featureCount: features.length });
         break;
       }
 
       case 'generate': {
-        const count = payload.count || 100000;
+        const count = msg.payload.count || 100000;
         const features = generatePoints(count);
         initCluster(features);
-        self.postMessage({ type: 'loaded', id, featureCount: features.length });
+        respond({ type: 'loaded', id: msg.id, featureCount: features.length });
         break;
       }
 
       case 'get-clusters': {
-        const { bbox, zoom } = payload;
+        const { bbox, zoom } = msg.payload;
         const clusters = getClusters(bbox, zoom);
-        self.postMessage({ type: 'clusters', id, data: clusters });
+        respond({ type: 'clusters', id: msg.id, data: clusters });
         break;
       }
 
       case 'get-expansion-zoom': {
-        const zoom = getClusterExpansionZoom(payload.clusterId);
-        self.postMessage({ type: 'expansion-zoom', id, data: zoom });
+        const zoom = getClusterExpansionZoom(msg.payload.clusterId);
+        respond({ type: 'expansion-zoom', id: msg.id, data: zoom });
         break;
       }
 
       case 'get-leaves': {
-        const leaves = getClusterLeaves(payload.clusterId, payload.limit || 100, payload.offset || 0);
-        self.postMessage({ type: 'leaves', id, data: leaves });
+        const leaves = getClusterLeaves(msg.payload.clusterId, msg.payload.limit || 100, msg.payload.offset || 0);
+        respond({ type: 'leaves', id: msg.id, data: leaves });
         break;
       }
 
       case 'get-all-features': {
-        // Return all features as a GeoJSON source for heatmap
-        self.postMessage({
+        respond({
           type: 'all-features',
-          id,
-          data: { type: 'FeatureCollection', features: allFeatures },
+          id: msg.id,
+          data: { type: 'FeatureCollection' as const, features: allFeatures },
         });
         break;
       }
     }
   } catch (err) {
-    self.postMessage({ type: 'error', id, message: (err as Error).message });
+    respond({ type: 'error', id: msg.id, message: (err as Error).message });
   }
 };

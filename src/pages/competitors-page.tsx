@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Trash2, Plus, Building2 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
+import { toast } from 'sonner';
 import {
   fetchCompetitors, createCompetitor, deleteCompetitor, type CompetitorRow,
 } from '@/lib/api';
@@ -21,6 +22,8 @@ export default function CompetitorsPage() {
   const [competitors, setCompetitors] = useState<CompetitorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Sheet state
   const [open, setOpen] = useState(false);
@@ -75,17 +78,26 @@ export default function CompetitorsPage() {
           : undefined,
       });
       setOpen(false);
+      toast.success('Competitor created');
       reload();
-    } catch {
-      setError('Failed to create competitor');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to create competitor');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    await deleteCompetitor(id);
-    reload();
+    setDeletingId(id);
+    try {
+      await deleteCompetitor(id);
+      toast.success('Competitor deleted');
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete competitor');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (error && !competitors.length) {
@@ -161,8 +173,8 @@ export default function CompetitorsPage() {
                       {new Date(c.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(c.id)}>
-                        <Trash2 />
+                      <Button variant="ghost" size="icon" className="text-destructive" disabled={deletingId === c.id} onClick={() => handleDelete(c.id)}>
+                        {deletingId === c.id ? <Spinner /> : <Trash2 />}
                       </Button>
                     </TableCell>
                   </TableRow>

@@ -1,6 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import db from './db.js';
+import {
+  isNonEmptyString, isOptionalString, isOptionalNumber,
+  isValidLng, isValidLat, isOptionalLng, isOptionalLat,
+  isStringArray, sanitize, sanitizeArray,
+} from './validate.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,18 +18,24 @@ app.use(express.json({ limit: '100mb' }));
 app.get('/api/features', (req, res) => {
   const { west, south, east, north, category, limit = '100000', offset = '0' } = req.query;
 
+  const parsedLimit = Math.min(Math.max(0, Number(limit) || 0), 100000);
+  const parsedOffset = Math.max(0, Number(offset) || 0);
+
   let sql = 'SELECT id, lng, lat, name, category, value, properties FROM features';
   const conditions: string[] = [];
   const params: (string | number)[] = [];
 
   if (west && south && east && north) {
-    conditions.push('lng >= ? AND lng <= ? AND lat >= ? AND lat <= ?');
-    params.push(Number(west), Number(east), Number(south), Number(north));
+    const w = Number(west), s = Number(south), e = Number(east), n = Number(north);
+    if ([w, s, e, n].every(Number.isFinite)) {
+      conditions.push('lng >= ? AND lng <= ? AND lat >= ? AND lat <= ?');
+      params.push(w, e, s, n);
+    }
   }
 
-  if (category) {
+  if (category && typeof category === 'string') {
     conditions.push('category = ?');
-    params.push(String(category));
+    params.push(sanitize(String(category)));
   }
 
   if (conditions.length) {
@@ -32,7 +43,7 @@ app.get('/api/features', (req, res) => {
   }
 
   sql += ` LIMIT ? OFFSET ?`;
-  params.push(Number(limit), Number(offset));
+  params.push(parsedLimit, parsedOffset);
 
   const rows = db.prepare(sql).all(...params);
   const total = db.prepare(
@@ -110,13 +121,22 @@ app.get('/api/features/stats', (_req, res) => {
 app.post('/api/features', (req, res) => {
   const { lng, lat, name, category, value, properties } = req.body;
 
-  if (typeof lng !== 'number' || typeof lat !== 'number') {
-    return res.status(400).json({ error: 'lng and lat are required numbers' });
+  if (!isValidLng(lng) || !isValidLat(lat)) {
+    return res.status(400).json({ error: 'lng (-180..180) and lat (-90..90) are required numbers' });
   }
+  if (!isOptionalString(name)) return res.status(400).json({ error: 'name must be a string' });
+  if (!isOptionalString(category)) return res.status(400).json({ error: 'category must be a string' });
+  if (!isOptionalNumber(value)) return res.status(400).json({ error: 'value must be a number' });
 
   const result = db.prepare(
     'INSERT INTO features (lng, lat, name, category, value, properties) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(lng, lat, name || null, category || null, value || null, properties ? JSON.stringify(properties) : null);
+  ).run(
+    lng, lat,
+    name ? sanitize(name) : null,
+    category ? sanitize(category) : null,
+    value ?? null,
+    properties ? JSON.stringify(properties) : null,
+  );
 
   res.json({ id: result.lastInsertRowid });
 });
@@ -144,6 +164,15 @@ app.post('/api/features/bulk', (req, res) => {
 
   if (!Array.isArray(features)) {
     return res.status(400).json({ error: 'features must be an array' });
+  }
+  if (features.length > 500000) {
+    return res.status(400).json({ error: 'Maximum 500,000 features per bulk insert' });
+  }
+  for (let i = 0; i < features.length; i++) {
+    const f = features[i];
+    if (!isValidLng(f.lng) || !isValidLat(f.lat)) {
+      return res.status(400).json({ error: `Feature at index ${i}: lng/lat are invalid` });
+    }
   }
 
   insertMany(features);
@@ -197,11 +226,16 @@ app.get('/api/users/:id', (req, res) => {
 
 app.post('/api/users', (req, res) => {
   const { id, name, types, preferences } = req.body;
-  if (!id || !name) return res.status(400).json({ error: 'id and name are required' });
+  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
+  if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
+  if (types !== undefined && !isStringArray(types)) return res.status(400).json({ error: 'types must be a string array' });
+
+  const safeName = sanitize(name, 200);
+  const safeTypes = types ? sanitizeArray(types, 10, 50) : [];
   db.prepare('INSERT INTO users (id, name, types, preferences) VALUES (?, ?, ?, ?)').run(
-    id, name, JSON.stringify(types ?? []), JSON.stringify(preferences ?? {})
+    id, safeName, JSON.stringify(safeTypes), JSON.stringify(preferences ?? {})
   );
-  res.json({ id, name, types: types ?? [], preferences: preferences ?? {} });
+  res.json({ id, name: safeName, types: safeTypes, preferences: preferences ?? {} });
 });
 
 // ── PUT /api/users/:id — update a user ──
@@ -211,10 +245,13 @@ app.put('/api/users/:id', (req, res) => {
   const existing = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'User not found' });
 
+  if (name !== undefined && !isNonEmptyString(name)) return res.status(400).json({ error: 'name must be a non-empty string' });
+  if (types !== undefined && !isStringArray(types)) return res.status(400).json({ error: 'types must be a string array' });
+
   const updates: string[] = [];
   const params: (string)[] = [];
-  if (name !== undefined) { updates.push('name = ?'); params.push(name); }
-  if (types !== undefined) { updates.push('types = ?'); params.push(JSON.stringify(types)); }
+  if (name !== undefined) { updates.push('name = ?'); params.push(sanitize(name, 200)); }
+  if (types !== undefined) { updates.push('types = ?'); params.push(JSON.stringify(sanitizeArray(types, 10, 50))); }
   if (preferences !== undefined) { updates.push('preferences = ?'); params.push(JSON.stringify(preferences)); }
 
   if (updates.length === 0) return res.status(400).json({ error: 'Nothing to update' });
@@ -265,12 +302,18 @@ app.get('/api/elevators', (req, res) => {
 
 app.post('/api/elevators', (req, res) => {
   const { id, merchant_user_id, name, lng, lat, address, commodities } = req.body;
-  db.prepare('INSERT INTO elevators (id, merchant_user_id, name, lng, lat, address) VALUES (?, ?, ?, ?, ?, ?)').run(id, merchant_user_id ?? null, name, lng, lat, address ?? null);
-  if (commodities && Array.isArray(commodities)) {
+  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
+  if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
+  if (!isValidLng(lng) || !isValidLat(lat)) return res.status(400).json({ error: 'Valid lng/lat are required' });
+  if (commodities !== undefined && !isStringArray(commodities)) return res.status(400).json({ error: 'commodities must be a string array' });
+
+  db.prepare('INSERT INTO elevators (id, merchant_user_id, name, lng, lat, address) VALUES (?, ?, ?, ?, ?, ?)').run(
+    id, merchant_user_id ?? null, sanitize(name), lng, lat, address ? sanitize(address) : null
+  );
+  if (commodities) {
+    const safeCommodities = sanitizeArray(commodities);
     const stmt = db.prepare('INSERT OR IGNORE INTO elevator_commodities (id, elevator_id, commodity) VALUES (?, ?, ?)');
-    for (const c of commodities) {
-      stmt.run(crypto.randomUUID(), id, c);
-    }
+    for (const c of safeCommodities) stmt.run(crypto.randomUUID(), id, c);
   }
   const row = db.prepare('SELECT * FROM elevators WHERE id = ?').get(id) as ElevatorRow;
   const comms = (db.prepare('SELECT commodity FROM elevator_commodities WHERE elevator_id = ?').all(id) as { commodity: string }[]).map((c) => c.commodity);
@@ -329,6 +372,8 @@ app.get('/api/assignments', (req, res) => {
 // Assign an originator to a merchant
 app.post('/api/assignments', (req, res) => {
   const { merchant_user_id, originator_user_id } = req.body;
+  if (!isNonEmptyString(merchant_user_id)) return res.status(400).json({ error: 'merchant_user_id is required' });
+  if (!isNonEmptyString(originator_user_id)) return res.status(400).json({ error: 'originator_user_id is required' });
   db.prepare('INSERT OR IGNORE INTO merchant_originators (merchant_user_id, originator_user_id) VALUES (?, ?)').run(merchant_user_id, originator_user_id);
   res.status(201).json({ merchant_user_id, originator_user_id });
 });
@@ -336,6 +381,9 @@ app.post('/api/assignments', (req, res) => {
 // Remove an originator from a merchant
 app.delete('/api/assignments', (req, res) => {
   const { merchant_user_id, originator_user_id } = req.body;
+  if (!isNonEmptyString(merchant_user_id) || !isNonEmptyString(originator_user_id)) {
+    return res.status(400).json({ error: 'merchant_user_id and originator_user_id are required' });
+  }
   const result = db.prepare('DELETE FROM merchant_originators WHERE merchant_user_id = ? AND originator_user_id = ?').run(merchant_user_id, originator_user_id);
   res.json({ deleted: result.changes });
 });
@@ -392,18 +440,23 @@ app.get('/api/producers', (req, res) => {
 
 app.post('/api/producers', (req, res) => {
   const { id, name, business_name, lng, lat, address, commodities, originator_user_ids, locations } = req.body;
-  if (!id || !name) return res.status(400).json({ error: 'id and name are required' });
+  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
+  if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
+  if (!isOptionalLng(lng) || !isOptionalLat(lat)) return res.status(400).json({ error: 'Invalid lng/lat' });
+  if (commodities !== undefined && !isStringArray(commodities)) return res.status(400).json({ error: 'commodities must be a string array' });
+  if (originator_user_ids !== undefined && !isStringArray(originator_user_ids)) return res.status(400).json({ error: 'originator_user_ids must be a string array' });
 
   db.prepare('INSERT INTO producers (id, name, business_name, lng, lat, address) VALUES (?, ?, ?, ?, ?, ?)').run(
-    id, name, business_name ?? null, lng ?? null, lat ?? null, address ?? null
+    id, sanitize(name), business_name ? sanitize(business_name) : null, lng ?? null, lat ?? null, address ? sanitize(address) : null
   );
 
-  if (commodities && Array.isArray(commodities)) {
+  if (commodities) {
+    const safeCommodities = sanitizeArray(commodities);
     const stmt = db.prepare('INSERT OR IGNORE INTO producer_commodities (id, producer_id, commodity) VALUES (?, ?, ?)');
-    for (const c of commodities) stmt.run(crypto.randomUUID(), id, c);
+    for (const c of safeCommodities) stmt.run(crypto.randomUUID(), id, c);
   }
 
-  if (originator_user_ids && Array.isArray(originator_user_ids)) {
+  if (originator_user_ids) {
     const stmt = db.prepare('INSERT OR IGNORE INTO producer_assignments (producer_id, originator_user_id) VALUES (?, ?)');
     for (const oid of originator_user_ids) stmt.run(id, oid);
   }
@@ -411,7 +464,9 @@ app.post('/api/producers', (req, res) => {
   if (locations && Array.isArray(locations)) {
     const stmt = db.prepare('INSERT INTO producer_locations (id, producer_id, name, address, lng, lat) VALUES (?, ?, ?, ?, ?, ?)');
     for (const loc of locations) {
-      stmt.run(loc.id ?? crypto.randomUUID(), id, loc.name, loc.address ?? null, loc.lng ?? null, loc.lat ?? null);
+      if (!isNonEmptyString(loc.name)) continue;
+      if (!isOptionalLng(loc.lng) || !isOptionalLat(loc.lat)) continue;
+      stmt.run(loc.id ?? crypto.randomUUID(), id, sanitize(loc.name), loc.address ? sanitize(loc.address) : null, loc.lng ?? null, loc.lat ?? null);
     }
   }
 
@@ -488,15 +543,19 @@ app.get('/api/competitors', (_req, res) => {
 
 app.post('/api/competitors', (req, res) => {
   const { id, name, lng, lat, address, commodities } = req.body;
-  if (!id || !name) return res.status(400).json({ error: 'id and name are required' });
+  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
+  if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
+  if (!isOptionalLng(lng) || !isOptionalLat(lat)) return res.status(400).json({ error: 'Invalid lng/lat' });
+  if (commodities !== undefined && !isStringArray(commodities)) return res.status(400).json({ error: 'commodities must be a string array' });
 
   db.prepare('INSERT INTO competitors (id, name, lng, lat, address) VALUES (?, ?, ?, ?, ?)').run(
-    id, name, lng ?? null, lat ?? null, address ?? null
+    id, sanitize(name), lng ?? null, lat ?? null, address ? sanitize(address) : null
   );
 
-  if (commodities && Array.isArray(commodities)) {
+  if (commodities) {
+    const safeCommodities = sanitizeArray(commodities);
     const stmt = db.prepare('INSERT OR IGNORE INTO competitor_commodities (id, competitor_id, commodity) VALUES (?, ?, ?)');
-    for (const c of commodities) stmt.run(crypto.randomUUID(), id, c);
+    for (const c of safeCommodities) stmt.run(crypto.randomUUID(), id, c);
   }
 
   const row = db.prepare('SELECT * FROM competitors WHERE id = ?').get(id) as CompetitorRow;

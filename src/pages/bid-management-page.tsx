@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { BidContractRow } from '@/components/bid-contract-row';
-import { BidRevisePanel } from '@/components/bid-revise-panel';
 import { CORN_CONTRACTS, type CornContract } from '@/lib/bid-data';
 import { TrendingUp, ChevronsUpDown, ChevronsDownUp, Plus } from 'lucide-react';
 
 export default function BidManagementPage() {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['N26']));
-  const [revising, setRevising] = useState<CornContract | null>(null);
 
   const toggle = useCallback((code: string) => {
     setExpanded((prev) => {
@@ -21,6 +21,22 @@ export default function BidManagementPage() {
 
   const expandAll = () => setExpanded(new Set(CORN_CONTRACTS.map((c) => c.code)));
   const collapseAll = () => setExpanded(new Set());
+
+  // Revise contract → open map with all delivery window tabs
+  const reviseContract = useCallback(
+    (contract: CornContract) => {
+      navigate('/map', { state: { contract } });
+    },
+    [navigate],
+  );
+
+  // Revise specific window → open map, land on that tab
+  const reviseWindow = useCallback(
+    (contract: CornContract, windowCode: string) => {
+      navigate('/map', { state: { contract, initialWindowCode: windowCode } });
+    },
+    [navigate],
+  );
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -56,16 +72,11 @@ export default function BidManagementPage() {
             contract={c}
             expanded={expanded.has(c.code)}
             onToggle={() => toggle(c.code)}
-            onRevise={() => setRevising(c)}
+            onRevise={() => reviseContract(c)}
+            onReviseWindow={(windowCode) => reviseWindow(c, windowCode)}
           />
         ))}
       </div>
-
-      <BidRevisePanel
-        contract={revising}
-        open={revising !== null}
-        onClose={() => setRevising(null)}
-      />
     </div>
   );
 }

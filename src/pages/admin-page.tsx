@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useUsers } from '@/hooks/use-users';
+import { toast } from 'sonner';
 import {
   fetchElevators, updateElevator,
   fetchAssignments, createAssignment, deleteAssignment,
@@ -38,31 +39,44 @@ function AdminContent() {
 
   const reload = useCallback(async () => {
     setLoading(true);
-    const [u, e, a] = await Promise.all([fetchUsers(), fetchElevators(), fetchAssignments()]);
-    setUsers(u.users);
-    setElevators(e.elevators);
-    setAssignments(a.assignments);
-    setLoading(false);
+    try {
+      const [u, e, a] = await Promise.all([fetchUsers(), fetchElevators(), fetchAssignments()]);
+      setUsers(u.users);
+      setElevators(e.elevators);
+      setAssignments(a.assignments);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to load admin data');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
 
   const handleElevatorAssign = async (elevatorId: string, merchantUserId: string) => {
-    await updateElevator(elevatorId, { merchant_user_id: merchantUserId || null });
-    reload();
+    try {
+      await updateElevator(elevatorId, { merchant_user_id: merchantUserId || null });
+      toast.success('Elevator assignment updated');
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update elevator');
+    }
   };
 
   const handleOriginatorAssign = async (originatorUserId: string, merchantUserId: string) => {
-    // Remove existing assignment for this originator
-    const existing = assignments.filter((a) => a.originator_user_id === originatorUserId);
-    for (const a of existing) {
-      await deleteAssignment(a.merchant_user_id, a.originator_user_id);
+    try {
+      const existing = assignments.filter((a) => a.originator_user_id === originatorUserId);
+      for (const a of existing) {
+        await deleteAssignment(a.merchant_user_id, a.originator_user_id);
+      }
+      if (merchantUserId) {
+        await createAssignment(merchantUserId, originatorUserId);
+      }
+      toast.success('Originator assignment updated');
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update assignment');
     }
-    // Create new assignment if a merchant was selected
-    if (merchantUserId) {
-      await createAssignment(merchantUserId, originatorUserId);
-    }
-    reload();
   };
 
   const getAssignedMerchant = (originatorUserId: string): string => {

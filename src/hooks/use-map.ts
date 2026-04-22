@@ -111,10 +111,12 @@ function addLayers(map: maplibregl.Map, heatmapVisible: boolean) {
 
 export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, theme: ResolvedTheme = 'light', onReady?: () => void) {
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
   const clustersEnabled = useRef(true);
   const heatmapEnabled = useRef(false);
   const totalRef = useRef(0);
   const themeRef = useRef(theme);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const updateClusters = useCallback(async () => {
     const map = mapRef.current;
@@ -128,6 +130,11 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
     const source = map.getSource('clusters') as maplibregl.GeoJSONSource;
     source?.setData({ type: 'FeatureCollection', features: clusters });
   }, []);
+
+  const debouncedUpdateClusters = useCallback(() => {
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(updateClusters, 150);
+  }, [updateClusters]);
 
   // Init map
   useEffect(() => {
@@ -150,8 +157,8 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
     map.on('load', () => {
       applySproutTheme(map, theme);
       addLayers(map, false);
-      map.on('moveend', updateClusters);
-      map.on('zoomend', updateClusters);
+      map.on('moveend', debouncedUpdateClusters);
+      map.on('zoomend', debouncedUpdateClusters);
       onReady?.();
 
       map.on('click', 'cluster-circles', async (e) => {
@@ -168,13 +175,24 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
         const feature = e.features?.[0];
         if (!feature || feature.geometry.type !== 'Point') return;
         const props = feature.properties;
-        const rows = Object.entries(props)
-          .filter(([k]) => k !== 'id')
-          .map(([k, v]) => `<b>${k}:</b> ${v}`)
-          .join('<br>');
+        const container = document.createElement('div');
+        container.className = 'text-sm leading-relaxed';
+        const entries = Object.entries(props).filter(([k]) => k !== 'id');
+        if (entries.length === 0) {
+          container.textContent = 'No properties';
+        } else {
+          for (const [k, v] of entries) {
+            const row = document.createElement('div');
+            const label = document.createElement('b');
+            label.textContent = `${k}: `;
+            row.appendChild(label);
+            row.appendChild(document.createTextNode(String(v)));
+            container.appendChild(row);
+          }
+        }
         new maplibregl.Popup({ maxWidth: '300px' })
           .setLngLat(feature.geometry.coordinates as [number, number])
-          .setHTML(rows || 'No properties')
+          .setDOMContent(container)
           .addTo(map);
       });
 
@@ -187,10 +205,13 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
     mapRef.current = map;
 
     return () => {
+      clearTimeout(debounceTimer.current);
+      for (const m of markersRef.current) m.remove();
+      markersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
-  }, [containerRef, updateClusters]);
+  }, [containerRef, updateClusters, debouncedUpdateClusters]);
 
   const onDataLoaded = useCallback(async (count: number) => {
     totalRef.current = count;
@@ -270,7 +291,8 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
 
   const addMarker = useCallback((lng: number, lat: number) => {
     if (!mapRef.current) return;
-    new maplibregl.Marker().setLngLat([lng, lat]).addTo(mapRef.current);
+    const marker = new maplibregl.Marker().setLngLat([lng, lat]).addTo(mapRef.current);
+    markersRef.current.push(marker);
   }, []);
 
   return {

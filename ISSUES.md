@@ -2,27 +2,27 @@
 
 ## Critical
 
-- [ ] **No API error handling** — `src/lib/api.ts` calls `res.json()` without checking `response.ok`. Network/server errors silently fail.
-- [ ] **XSS in map popups** — `src/hooks/use-map.ts` uses `setHTML()` with user-supplied data. Should use `setDOMContent()` with sanitized elements.
-- [ ] **No input validation on server** — lng/lat, names, addresses accepted without sanitization in `server/index.ts`.
+- [x] **No API error handling** — All API calls now use `apiFetch()` wrapper that checks `response.ok` and throws with server error message. Toast notifications on success/failure via `sonner`.
+- [x] **XSS in map popups** — Replaced `setHTML()` with `setDOMContent()` using safe DOM text nodes.
+- [x] **No input validation on server** — Added `server/validate.ts` with validators for coordinates, strings, arrays. All mutation endpoints validate input; invalid requests return 400 with error details.
 
 ## Medium
 
-- [ ] **No toast/notification system** — Users get no feedback on success/failure. Install `sonner` (shadcn recommendation).
-- [ ] **No debouncing on map updates** — `updateClusters()` fires on every `moveend`/`zoomend` in `use-map.ts`.
+- [x] **No toast/notification system** — Installed `sonner` via shadcn, Toaster in app root. Toast calls on create/delete in producers and competitors pages.
+- [x] **No debouncing on map updates** — `moveend`/`zoomend` now trigger a 150ms debounced `updateClusters`.
 - [ ] **Producers & Competitors pages are nearly identical** — Extract shared list/form component from `producers-page.tsx` and `competitors-page.tsx`.
-- [ ] **Hardcoded API URL** — `src/lib/api.ts` defaults to `localhost:3001`, no production config.
+- [x] **Hardcoded API URL** — `src/lib/api.ts` now uses env var with dev/prod fallback.
 - [ ] **No database migrations** — Schema changes in `server/db.ts` require manual intervention or DB deletion.
-- [ ] **Race conditions in useUsers** — `src/hooks/use-users.tsx` has no `AbortController` on fetch calls; multiple async ops can overlap.
-- [ ] **No loading states on buttons** — Admin page and other forms allow interaction during async operations.
+- [x] **Race conditions in useUsers** — Replaced `cancelled` boolean with `AbortController`; fetch is aborted on cleanup. `fetchUsers` now accepts `AbortSignal`.
+- [x] **No loading states on buttons** — Delete buttons show spinner + disabled state while in progress. Admin page has toast notifications on assignment changes. Create buttons already had loading states.
 
 ## Minor
 
 - [ ] **No pagination UI** — Features query supports `limit`/`offset` but no UI for it.
-- [ ] **Worker messages lack TypeScript types** — `src/worker.ts` and `src/worker-client.ts` use string-based message types with no shared type definitions.
+- [x] **Worker messages lack TypeScript types** — Created `src/worker-types.ts` with `WorkerRequest` and `WorkerResponse` discriminated unions. Both `worker.ts` and `worker-client.ts` now use shared types.
 - [ ] **Missing ARIA labels** — Several interactive elements (map controls, popups) lack proper accessibility attributes.
 - [ ] **Possible unused dependencies** — `radix-ui` v1.4.3 may be redundant alongside shadcn's radix packages. Verify and remove.
-- [ ] **Memory leaks in useMap** — Map event listeners and worker message handlers not fully cleaned up on unmount.
+- [x] **Memory leaks in useMap** — Markers now tracked in `markersRef` and removed on cleanup. `map.remove()` already handles event listeners. Debounce timer cleared on unmount.
 
 ## Missing Features
 

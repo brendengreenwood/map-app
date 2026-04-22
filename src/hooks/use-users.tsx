@@ -50,17 +50,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // Load users from API on mount
   useEffect(() => {
-    let cancelled = false;
+    const ac = new AbortController();
     (async () => {
       try {
-        const { users: dbUsers } = await fetchUsers();
-        if (cancelled) return;
+        const { users: dbUsers } = await fetchUsers(ac.signal);
 
         if (dbUsers.length === 0) {
-          // Seed a default user
           const id = crypto.randomUUID();
           const created = await apiCreateUser({ id, name: 'Default', types: [], preferences: DEFAULT_PREFERENCES });
-          if (cancelled) return;
+          if (ac.signal.aborted) return;
           const user: User = {
             id: created.id,
             name: created.name,
@@ -77,22 +75,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
             types: (u.types as UserType[]) ?? [],
             preferences: { ...DEFAULT_PREFERENCES, ...(u.preferences as Partial<UserPreferences>) },
           }));
-          if (cancelled) return;
           setUsers(mapped);
-          // Validate stored active ID
           const storedId = localStorage.getItem(ACTIVE_KEY);
           if (!storedId || !mapped.some((u) => u.id === storedId)) {
             setActiveId(mapped[0].id);
             localStorage.setItem(ACTIVE_KEY, mapped[0].id);
           }
         }
-      } catch {
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') return;
         // API unreachable — keep fallback user
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!ac.signal.aborted) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => ac.abort();
   }, []);
 
   // Persist active ID to localStorage whenever it changes
