@@ -111,23 +111,24 @@ export default function BidManagementPage() {
       </PageHeader>
 
       <Tabs defaultValue={ELEVATOR_LOCATIONS[0].id}>
-        <TabsList>
+        <Card className="gap-0 py-0">
+          <div className="flex items-center gap-3 border-b px-4 py-3">
+            <TabsList>
+              {ELEVATOR_LOCATIONS.map((loc) => (
+                <TabsTrigger key={loc.id} value={loc.id} className="gap-1.5">
+                  <MapPin className="size-3.5" />
+                  {loc.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+
           {ELEVATOR_LOCATIONS.map((loc) => (
-            <TabsTrigger key={loc.id} value={loc.id} className="gap-1.5">
-              <MapPin className="size-3.5" />
-              {loc.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {ELEVATOR_LOCATIONS.map((loc) => (
-          <TabsContent key={loc.id} value={loc.id}>
-            <div className="mb-3 text-xs text-muted-foreground">
-              {loc.address} · {CORN_CONTRACTS.length} contracts
-            </div>
-
-            <Card className="gap-0 py-0 p-4">
-              <CardContent className="p-0">
+            <TabsContent key={loc.id} value={loc.id} className="mt-0">
+              <div className="px-4 py-2 text-xs text-muted-foreground">
+                {loc.address} · {CORN_CONTRACTS.length} contracts
+              </div>
+              <CardContent className="p-0 px-4 pb-4">
                 <ContractTable
                   expanded={expanded}
                   onToggle={toggle}
@@ -135,9 +136,9 @@ export default function BidManagementPage() {
                   onReviseWindow={reviseWindow}
                 />
               </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
+            </TabsContent>
+          ))}
+        </Card>
       </Tabs>
     </div>
   );
