@@ -1,6 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Table, TableBody, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import { PageHeader } from '@/components/page-header';
 import { BidContractRow } from '@/components/bid-contract-row';
 import { CORN_CONTRACTS, type CornContract } from '@/lib/bid-data';
@@ -65,18 +69,37 @@ export default function BidManagementPage() {
         {CORN_CONTRACTS.length} contracts · click a row to see delivery windows
       </div>
 
-      <div className="flex flex-col gap-2">
-        {CORN_CONTRACTS.map((c) => (
-          <BidContractRow
-            key={c.code}
-            contract={c}
-            expanded={expanded.has(c.code)}
-            onToggle={() => toggle(c.code)}
-            onRevise={() => reviseContract(c)}
-            onReviseWindow={(windowCode) => reviseWindow(c, windowCode)}
-          />
-        ))}
-      </div>
+      <Card className="gap-0 py-0 p-4">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-8" />
+                <TableHead>Contract</TableHead>
+                <TableHead>Posted</TableHead>
+                <TableHead>Max</TableHead>
+                <TableHead>Leeway</TableHead>
+                <TableHead>Increment</TableHead>
+                <TableHead>Freight</TableHead>
+                <TableHead className="text-right">Updated</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {CORN_CONTRACTS.map((c) => (
+                <BidContractRow
+                  key={c.code}
+                  contract={c}
+                  expanded={expanded.has(c.code)}
+                  onToggle={() => toggle(c.code)}
+                  onRevise={() => reviseContract(c)}
+                  onReviseWindow={(windowCode) => reviseWindow(c, windowCode)}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

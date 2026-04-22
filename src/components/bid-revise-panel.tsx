@@ -35,6 +35,7 @@ export function BidRevisePanel({ contract, open, onClose }: BidRevisePanelProps)
   const [max, setMax] = useState('');
   const [leeway, setLeeway] = useState('');
   const [increment, setIncrement] = useState('');
+  const [freight, setFreight] = useState('');
   const [checkedWindows, setCheckedWindows] = useState<Set<string>>(new Set());
 
   // Reset form when contract changes
@@ -44,6 +45,7 @@ export function BidRevisePanel({ contract, open, onClose }: BidRevisePanelProps)
     setMax(`${p.max}`);
     setLeeway(`${p.leeway}`);
     setIncrement(`${p.increment}`);
+    setFreight(`${p.freight}`);
     // Default: all inheriting windows checked, overrides unchecked
     const defaults = new Set<string>();
     windows.forEach((w) => {
@@ -116,6 +118,15 @@ export function BidRevisePanel({ contract, open, onClose }: BidRevisePanelProps)
                 value={increment}
                 onChange={(e) => setIncrement(e.target.value)}
                 placeholder="1"
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="freight">Freight cost (¢/bu)</FieldLabel>
+              <Input
+                id="freight"
+                value={freight}
+                onChange={(e) => setFreight(e.target.value)}
+                placeholder="12"
               />
             </Field>
           </FieldGroup>
