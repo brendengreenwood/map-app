@@ -306,14 +306,14 @@ function UserCommandItem({
       <span className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/user:opacity-100 transition-opacity">
         <button
           onClick={(e) => { e.stopPropagation(); onEdit(user); }}
-          className="rounded p-0.5 hover:bg-muted"
+          className="rounded p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Pencil className="size-3 text-muted-foreground" />
         </button>
         {onDelete && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(user.id); }}
-            className="rounded p-0.5 hover:bg-destructive/10"
+            className="rounded p-0.5 hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Trash2 className="size-3 text-muted-foreground hover:text-destructive" />
           </button>

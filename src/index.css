@@ -171,4 +171,13 @@
   html {
     @apply font-sans;
     }
+  button,
+  [role="button"],
+  [type="checkbox"],
+  [type="radio"],
+  select,
+  summary,
+  a[href] {
+    @apply cursor-pointer;
+    }
 }

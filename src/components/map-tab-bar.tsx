@@ -79,14 +79,14 @@ export function MapTabBar({
               {tab.closable !== false && (
                 <span
                   role="button"
-                  tabIndex={-1}
+                  tabIndex={0}
                   onClick={(e) => {
                     e.stopPropagation();
                     onTabClose?.(tab.id);
                   }}
                   className={cn(
                     'ml-0.5 flex size-4 items-center justify-center rounded-sm transition-colors',
-                    'hover:bg-muted',
+                    'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     isActive
                       ? 'opacity-100'
                       : 'opacity-0 group-hover:opacity-100',

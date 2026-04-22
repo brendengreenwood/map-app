@@ -285,7 +285,7 @@ export function MapBottomTabs({
             <div className="p-1.5">
               <button
                 onClick={() => toggle(tab.id)}
-                className={`flex w-full flex-col items-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors ${
+                className={`flex w-full flex-col items-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   activeTab === tab.id
                     ? 'bg-primary text-primary-foreground font-semibold'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted hover:ring-1 hover:ring-ring/30'
