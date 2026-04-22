@@ -5,10 +5,57 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   Table, TableBody, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-header';
 import { BidContractRow } from '@/components/bid-contract-row';
-import { CORN_CONTRACTS, type CornContract } from '@/lib/bid-data';
-import { TrendingUp, ChevronsUpDown, ChevronsDownUp, Plus } from 'lucide-react';
+import {
+  CORN_CONTRACTS, ELEVATOR_LOCATIONS, type CornContract,
+} from '@/lib/bid-data';
+import {
+  TrendingUp, ChevronsUpDown, ChevronsDownUp, Plus, MapPin,
+} from 'lucide-react';
+
+function ContractTable({
+  expanded,
+  onToggle,
+  onRevise,
+  onReviseWindow,
+}: {
+  expanded: Set<string>;
+  onToggle: (code: string) => void;
+  onRevise: (contract: CornContract) => void;
+  onReviseWindow: (contract: CornContract, windowCode: string) => void;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-8" />
+          <TableHead>Contract</TableHead>
+          <TableHead>Posted</TableHead>
+          <TableHead>Max</TableHead>
+          <TableHead>Leeway</TableHead>
+          <TableHead>Increment</TableHead>
+          <TableHead>Freight</TableHead>
+          <TableHead className="text-right">Updated</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {CORN_CONTRACTS.map((c) => (
+          <BidContractRow
+            key={c.code}
+            contract={c}
+            expanded={expanded.has(c.code)}
+            onToggle={() => onToggle(c.code)}
+            onRevise={() => onRevise(c)}
+            onReviseWindow={(windowCode) => onReviseWindow(c, windowCode)}
+          />
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
 
 export default function BidManagementPage() {
   const navigate = useNavigate();
@@ -26,7 +73,6 @@ export default function BidManagementPage() {
   const expandAll = () => setExpanded(new Set(CORN_CONTRACTS.map((c) => c.code)));
   const collapseAll = () => setExpanded(new Set());
 
-  // Revise contract → open map with all delivery window tabs
   const reviseContract = useCallback(
     (contract: CornContract) => {
       navigate('/map', { state: { contract } });
@@ -34,7 +80,6 @@ export default function BidManagementPage() {
     [navigate],
   );
 
-  // Revise specific window → open map, land on that tab
   const reviseWindow = useCallback(
     (contract: CornContract, windowCode: string) => {
       navigate('/map', { state: { contract, initialWindowCode: windowCode } });
@@ -65,41 +110,35 @@ export default function BidManagementPage() {
         </div>
       </PageHeader>
 
-      <div className="text-xs text-muted-foreground">
-        {CORN_CONTRACTS.length} contracts · click a row to see delivery windows
-      </div>
+      <Tabs defaultValue={ELEVATOR_LOCATIONS[0].id}>
+        <TabsList>
+          {ELEVATOR_LOCATIONS.map((loc) => (
+            <TabsTrigger key={loc.id} value={loc.id} className="gap-1.5">
+              <MapPin className="size-3.5" />
+              {loc.name}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      <Card className="gap-0 py-0 p-4">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8" />
-                <TableHead>Contract</TableHead>
-                <TableHead>Posted</TableHead>
-                <TableHead>Max</TableHead>
-                <TableHead>Leeway</TableHead>
-                <TableHead>Increment</TableHead>
-                <TableHead>Freight</TableHead>
-                <TableHead className="text-right">Updated</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {CORN_CONTRACTS.map((c) => (
-                <BidContractRow
-                  key={c.code}
-                  contract={c}
-                  expanded={expanded.has(c.code)}
-                  onToggle={() => toggle(c.code)}
-                  onRevise={() => reviseContract(c)}
-                  onReviseWindow={(windowCode) => reviseWindow(c, windowCode)}
+        {ELEVATOR_LOCATIONS.map((loc) => (
+          <TabsContent key={loc.id} value={loc.id}>
+            <div className="mb-3 text-xs text-muted-foreground">
+              {loc.address} · {CORN_CONTRACTS.length} contracts
+            </div>
+
+            <Card className="gap-0 py-0 p-4">
+              <CardContent className="p-0">
+                <ContractTable
+                  expanded={expanded}
+                  onToggle={toggle}
+                  onRevise={reviseContract}
+                  onReviseWindow={reviseWindow}
                 />
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }

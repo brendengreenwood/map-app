@@ -28,6 +28,20 @@ export function formatFreight(cents: number): string {
   return `${cents}¢/bu`;
 }
 
+// ── Elevator locations ────────────────────────────────────
+
+export interface ElevatorLocation {
+  id: string;
+  name: string;
+  address: string;
+}
+
+export const ELEVATOR_LOCATIONS: ElevatorLocation[] = [
+  { id: 'elev-1', name: 'Riverside Terminal', address: '1200 River Rd, Burlington, IA' },
+  { id: 'elev-2', name: 'Heartland Grain Co', address: '850 Hwy 34, Mt. Pleasant, IA' },
+  { id: 'elev-3', name: 'Prairie Creek Elevator', address: '420 Main St, Fairfield, IA' },
+];
+
 // ── Contracts ──────────────────────────────────────────────
 
 export const CORN_CONTRACTS: CornContract[] = [
