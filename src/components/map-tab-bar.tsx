@@ -25,6 +25,8 @@ interface MapTabBarProps {
 
   /** Element rendered at the far-left of the bar (e.g. back button). */
   leadingAction?: ReactNode;
+  /** Title block between leading action and tabs (e.g. contract name). */
+  title?: ReactNode;
   /** Element rendered at the far-right of the bar (e.g. "+" button). */
   trailingAction?: ReactNode;
 }
@@ -35,6 +37,7 @@ export function MapTabBar({
   onTabChange,
   onTabClose,
   leadingAction,
+  title,
   trailingAction,
 }: MapTabBarProps) {
   return (
@@ -43,6 +46,13 @@ export function MapTabBar({
       {leadingAction && (
         <div className="flex shrink-0 items-center border-r border-border px-1">
           {leadingAction}
+        </div>
+      )}
+
+      {/* Title slot */}
+      {title && (
+        <div className="flex shrink-0 items-center border-r border-border px-3">
+          {title}
         </div>
       )}
 

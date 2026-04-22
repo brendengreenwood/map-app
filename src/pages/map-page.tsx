@@ -1,12 +1,13 @@
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar, TrendingUp } from 'lucide-react';
 import { useMap } from '@/hooks/use-map';
 import { useUsers } from '@/hooks/use-users';
 import { MapBottomTabs } from '@/components/map-bottom-tabs';
 import { MapTabBar, type MapTab } from '@/components/map-tab-bar';
 import { BidMapEditor } from '@/components/bid-map-editor';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   type CornContract,
   type DeliveryWindow,
@@ -107,6 +108,20 @@ export default function MapPage() {
             <Button variant="ghost" size="icon-sm" onClick={closeBidMode}>
               <ArrowLeft />
             </Button>
+          }
+          title={
+            <div className="flex items-center gap-2">
+              <TrendingUp className="size-3.5 text-primary" />
+              <span className="text-xs font-semibold">
+                {contract!.label}
+              </span>
+              <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-mono">
+                ZC {contract!.code}
+              </Badge>
+              <span className="text-[10px] text-muted-foreground">
+                · {windows.length} window{windows.length !== 1 ? 's' : ''}
+              </span>
+            </div>
           }
         />
       )}
