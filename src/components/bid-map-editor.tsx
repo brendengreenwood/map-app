@@ -12,6 +12,7 @@ import {
   DELIVERY_WINDOWS,
   getWindowPricing,
   formatBasis,
+  formatFreight,
 } from '@/lib/bid-data';
 
 interface BidMapEditorProps {
@@ -36,6 +37,7 @@ export function BidMapEditor({ contract, window: dw, onSave, onCancel }: BidMapE
   const [max, setMax] = useState('');
   const [leeway, setLeeway] = useState('');
   const [increment, setIncrement] = useState('');
+  const [freight, setFreight] = useState('');
 
   // Reset when the active tab changes
   useEffect(() => {
@@ -43,7 +45,8 @@ export function BidMapEditor({ contract, window: dw, onSave, onCancel }: BidMapE
     setMax(`${activePricing.max}`);
     setLeeway(`${activePricing.leeway}`);
     setIncrement(`${activePricing.increment}`);
-  }, [editKey, activePricing.posted, activePricing.max, activePricing.leeway, activePricing.increment]);
+    setFreight(`${activePricing.freight}`);
+  }, [editKey, activePricing.posted, activePricing.max, activePricing.leeway, activePricing.increment, activePricing.freight]);
 
   return (
     <div className="flex h-full flex-col bg-card">
@@ -101,6 +104,10 @@ export function BidMapEditor({ contract, window: dw, onSave, onCancel }: BidMapE
                   <div>
                     <span className="text-muted-foreground">Increment: </span>
                     <span className="font-mono">{parentPricing.increment}¢</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Freight: </span>
+                    <span className="font-mono">{formatFreight(parentPricing.freight)}</span>
                   </div>
                 </div>
               </div>
@@ -174,6 +181,14 @@ export function BidMapEditor({ contract, window: dw, onSave, onCancel }: BidMapE
                 id={`increment-${editKey}`}
                 value={increment}
                 onChange={(e) => setIncrement(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`freight-${editKey}`}>Freight cost (¢/bu)</FieldLabel>
+              <Input
+                id={`freight-${editKey}`}
+                value={freight}
+                onChange={(e) => setFreight(e.target.value)}
               />
             </Field>
           </FieldGroup>

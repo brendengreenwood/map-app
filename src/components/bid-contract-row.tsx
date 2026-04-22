@@ -9,6 +9,7 @@ import {
   DELIVERY_WINDOWS,
   getWindowPricing,
   formatBasis,
+  formatFreight,
 } from '@/lib/bid-data';
 import { ChevronDown, Eye, Pencil } from 'lucide-react';
 
@@ -75,6 +76,7 @@ function WindowRow({
       <PricingField label="max" value={formatBasis(pricing.max)} />
       <PricingField label="leeway" value={`${pricing.leeway}¢`} />
       <PricingField label="increment" value={`${pricing.increment}¢`} />
+      <PricingField label="freight" value={formatFreight(pricing.freight)} />
       <div className="flex-1" />
       <div className="flex gap-1">
         <Button variant="ghost" size="sm">
@@ -141,6 +143,7 @@ export function BidContractRow({
         <PricingField label="max bid" value={formatBasis(p.max)} />
         <PricingField label="leeway" value={`${p.leeway}¢`} />
         <PricingField label="increment" value={`${p.increment}¢`} />
+        <PricingField label="freight" value={formatFreight(p.freight)} />
 
         <div className="flex-1" />
 

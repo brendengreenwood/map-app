@@ -10,6 +10,7 @@ export interface PricingData {
   max: number;      // max bid in cents
   leeway: number;   // leeway in cents
   increment: number; // bid increment in cents
+  freight: number;  // freight cost in cents per bushel
   updated: string;
   by: string;
 }
@@ -21,6 +22,10 @@ export interface DeliveryWindow {
 
 export interface WindowPricing extends Omit<PricingData, 'updated' | 'by'> {
   isOverride: boolean;
+}
+
+export function formatFreight(cents: number): string {
+  return `${cents}¢/bu`;
 }
 
 // ── Contracts ──────────────────────────────────────────────
@@ -40,15 +45,15 @@ export const CORN_CONTRACTS: CornContract[] = [
 // ── Pricing per contract ───────────────────────────────────
 
 export const PRICING_DATA: Record<string, PricingData> = {
-  N26: { posted: -25, max: -15, leeway: 3, increment: 1, updated: '2h ago', by: 'R. Miller' },
-  U26: { posted: -22, max: -12, leeway: 3, increment: 1, updated: '2h ago', by: 'R. Miller' },
-  Z26: { posted: -18, max: -8,  leeway: 5, increment: 2, updated: '4h ago', by: 'S. Chen' },
-  H27: { posted: -20, max: -10, leeway: 4, increment: 2, updated: '1d ago', by: 'S. Chen' },
-  K27: { posted: -16, max: -6,  leeway: 3, increment: 1, updated: '1d ago', by: 'S. Chen' },
-  N27: { posted: -14, max: -4,  leeway: 3, increment: 1, updated: '3d ago', by: 'R. Miller' },
-  U27: { posted: -12, max: -2,  leeway: 2, increment: 1, updated: '3d ago', by: 'R. Miller' },
-  Z27: { posted: -10, max: 0,   leeway: 5, increment: 2, updated: '5d ago', by: 'J. Doe' },
-  H28: { posted: -8,  max: 2,   leeway: 4, increment: 2, updated: '1w ago', by: 'J. Doe' },
+  N26: { posted: -25, max: -15, leeway: 3, increment: 1, freight: 12, updated: '2h ago', by: 'R. Miller' },
+  U26: { posted: -22, max: -12, leeway: 3, increment: 1, freight: 14, updated: '2h ago', by: 'R. Miller' },
+  Z26: { posted: -18, max: -8,  leeway: 5, increment: 2, freight: 15, updated: '4h ago', by: 'S. Chen' },
+  H27: { posted: -20, max: -10, leeway: 4, increment: 2, freight: 13, updated: '1d ago', by: 'S. Chen' },
+  K27: { posted: -16, max: -6,  leeway: 3, increment: 1, freight: 11, updated: '1d ago', by: 'S. Chen' },
+  N27: { posted: -14, max: -4,  leeway: 3, increment: 1, freight: 12, updated: '3d ago', by: 'R. Miller' },
+  U27: { posted: -12, max: -2,  leeway: 2, increment: 1, freight: 14, updated: '3d ago', by: 'R. Miller' },
+  Z27: { posted: -10, max: 0,   leeway: 5, increment: 2, freight: 16, updated: '5d ago', by: 'J. Doe' },
+  H28: { posted: -8,  max: 2,   leeway: 4, increment: 2, freight: 15, updated: '1w ago', by: 'J. Doe' },
 };
 
 // ── Delivery windows per contract ──────────────────────────
@@ -84,8 +89,8 @@ export const DELIVERY_WINDOWS: Record<string, DeliveryWindow[]> = {
 // ── Window-level pricing ───────────────────────────────────
 
 const WINDOW_OVERRIDES: Record<string, Partial<WindowPricing>> = {
-  'N26-JUN-A': { posted: -23, isOverride: true },
-  'Z26-NOV-A': { posted: -15, max: -5, isOverride: true },
+  'N26-JUN-A': { posted: -23, freight: 10, isOverride: true },
+  'Z26-NOV-A': { posted: -15, max: -5, freight: 18, isOverride: true },
 };
 
 export function getWindowPricing(contractCode: string, windowCode: string): WindowPricing {
@@ -97,6 +102,7 @@ export function getWindowPricing(contractCode: string, windowCode: string): Wind
       max: override.max ?? parent.max,
       leeway: override.leeway ?? parent.leeway,
       increment: override.increment ?? parent.increment,
+      freight: override.freight ?? parent.freight,
       isOverride: true,
     };
   }
@@ -105,6 +111,7 @@ export function getWindowPricing(contractCode: string, windowCode: string): Wind
     max: parent.max,
     leeway: parent.leeway,
     increment: parent.increment,
+    freight: parent.freight,
     isOverride: false,
   };
 }
