@@ -49,19 +49,19 @@ export function BidContractRow({
         </TableCell>
         <TableCell className="font-semibold">
           <div>{contract.label}</div>
-          <div className="font-mono text-[10px] font-normal text-muted-foreground">
+          <div className="text-[10px] font-normal text-muted-foreground">
             ZC · {contract.code}
           </div>
         </TableCell>
-        <TableCell className="font-mono tabular-nums font-semibold">
+        <TableCell className="tabular-nums font-semibold">
           {formatBasis(p.posted)}
         </TableCell>
-        <TableCell className="font-mono tabular-nums">
+        <TableCell className="tabular-nums">
           {formatBasis(p.max)}
         </TableCell>
-        <TableCell className="font-mono tabular-nums">{p.leeway}¢</TableCell>
-        <TableCell className="font-mono tabular-nums">{p.increment}¢</TableCell>
-        <TableCell className="font-mono tabular-nums">
+        <TableCell className="tabular-nums">{p.leeway}¢</TableCell>
+        <TableCell className="tabular-nums">{p.increment}¢</TableCell>
+        <TableCell className="tabular-nums">
           {formatFreight(p.freight)}
         </TableCell>
         <TableCell className="text-right text-xs text-muted-foreground">
@@ -105,28 +105,28 @@ export function BidContractRow({
                     </span>
                   )}
                 </div>
-                <div className="font-mono text-[10px] text-muted-foreground">
+                <div className="text-[10px] text-muted-foreground">
                   {w.code}
                 </div>
               </TableCell>
               <TableCell
                 className={cn(
-                  'font-mono tabular-nums',
+                  'tabular-nums',
                   wp.isOverride && 'font-semibold',
                 )}
               >
                 {formatBasis(wp.posted)}
               </TableCell>
-              <TableCell className="font-mono tabular-nums">
+              <TableCell className="tabular-nums">
                 {formatBasis(wp.max)}
               </TableCell>
-              <TableCell className="font-mono tabular-nums">
+              <TableCell className="tabular-nums">
                 {wp.leeway}¢
               </TableCell>
-              <TableCell className="font-mono tabular-nums">
+              <TableCell className="tabular-nums">
                 {wp.increment}¢
               </TableCell>
-              <TableCell className="font-mono tabular-nums">
+              <TableCell className="tabular-nums">
                 {formatFreight(wp.freight)}
               </TableCell>
               <TableCell />
