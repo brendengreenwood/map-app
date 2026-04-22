@@ -112,7 +112,7 @@ export default function BidManagementPage() {
 
       <Tabs defaultValue={ELEVATOR_LOCATIONS[0].id}>
         <Card className="gap-0 py-0">
-          <div className="border-b px-4 pt-3">
+          <div className="border-b px-4 pt-3 pb-1">
             <TabsList variant="line">
               {ELEVATOR_LOCATIONS.map((loc) => (
                 <TabsTrigger key={loc.id} value={loc.id} className="gap-1.5">
