@@ -6,6 +6,7 @@ import ProducersPage from '@/pages/producers-page';
 import CompetitorsPage from '@/pages/competitors-page';
 import SettingsPage from '@/pages/settings-page';
 import AdminPage from '@/pages/admin-page';
+import BidManagementPage from '@/pages/bid-management-page';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="producers" element={<ProducersPage />} />
           <Route path="competitors" element={<CompetitorsPage />} />
+          <Route path="bids" element={<BidManagementPage />} />
           <Route path="admin" element={<AdminPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

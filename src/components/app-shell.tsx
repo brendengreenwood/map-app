@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Map, LayoutDashboard, Settings, Shield, Sun, Moon, Monitor, Wheat, Building2 } from 'lucide-react';
+import { Map, LayoutDashboard, Settings, Shield, Sun, Moon, Monitor, Wheat, Building2, TrendingUp } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +26,7 @@ const navItems = [
   { title: 'Map', path: '/map', icon: Map },
   { title: 'Producers', path: '/producers', icon: Wheat },
   { title: 'Competitors', path: '/competitors', icon: Building2 },
+  { title: 'Bids', path: '/bids', icon: TrendingUp },
   { title: 'Admin', path: '/admin', icon: Shield, adminOnly: true },
   { title: 'Settings', path: '/settings', icon: Settings },
 ];
