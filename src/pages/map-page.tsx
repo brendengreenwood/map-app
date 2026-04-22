@@ -7,7 +7,6 @@ import { MapBottomTabs } from '@/components/map-bottom-tabs';
 import { MapTabBar, type MapTab } from '@/components/map-tab-bar';
 import { BidMapEditor } from '@/components/bid-map-editor';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   type CornContract,
   type DeliveryWindow,
@@ -17,8 +16,11 @@ import {
 // State passed via navigate('/map', { state: ... })
 interface BidEditState {
   contract: CornContract;
-  initialWindowCode?: string; // which tab to land on
+  initialWindowCode?: string; // which tab to land on (contract code = parent)
 }
+
+// Sentinel tab ID for the parent contract scenario
+const CONTRACT_TAB_PREFIX = '__contract__';
 
 export default function MapPage() {
   const navigate = useNavigate();
@@ -39,27 +41,37 @@ export default function MapPage() {
   const bidState = location.state as BidEditState | null;
   const contract = bidState?.contract ?? null;
   const windows = contract ? (DELIVERY_WINDOWS[contract.code] ?? []) : [];
+  const contractTabId = contract ? `${CONTRACT_TAB_PREFIX}${contract.code}` : '';
 
-  const tabs: MapTab[] = useMemo(
-    () =>
-      windows.map((w) => ({
+  const tabs: MapTab[] = useMemo(() => {
+    if (!contract) return [];
+    // Parent contract is the first tab, delivery windows follow
+    return [
+      {
+        id: contractTabId,
+        label: `${contract.label} (ZC ${contract.code})`,
+        icon: TrendingUp,
+        closable: false,
+      },
+      ...windows.map((w) => ({
         id: w.code,
         label: w.label,
         icon: Calendar,
         closable: false,
       })),
-    [windows],
-  );
+    ];
+  }, [contract, contractTabId, windows]);
 
   const [activeTabId, setActiveTabId] = useState<string>(
-    () => bidState?.initialWindowCode ?? windows[0]?.code ?? '',
+    () => bidState?.initialWindowCode ?? contractTabId,
   );
 
-  const activeWindow: DeliveryWindow | undefined = windows.find(
-    (w) => w.code === activeTabId,
-  );
+  const isContractTab = activeTabId === contractTabId;
+  const activeWindow: DeliveryWindow | undefined = isContractTab
+    ? undefined
+    : windows.find((w) => w.code === activeTabId);
 
-  const isBidMode = contract !== null && windows.length > 0;
+  const isBidMode = contract !== null && tabs.length > 0;
 
   const closeBidMode = useCallback(() => {
     navigate('/bids', { replace: true });
@@ -109,20 +121,6 @@ export default function MapPage() {
               <ArrowLeft />
             </Button>
           }
-          title={
-            <div className="flex items-center gap-2">
-              <TrendingUp className="size-3.5 text-primary" />
-              <span className="text-xs font-semibold">
-                {contract!.label}
-              </span>
-              <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-mono">
-                ZC {contract!.code}
-              </Badge>
-              <span className="text-[10px] text-muted-foreground">
-                · {windows.length} window{windows.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-          }
         />
       )}
 
@@ -157,7 +155,7 @@ export default function MapPage() {
         </div>
 
         {/* ── Right-side editor panel (bid mode only) ──── */}
-        {isBidMode && activeWindow && (
+        {isBidMode && (isContractTab || activeWindow) && (
           <div className="w-80 shrink-0 border-l border-border">
             <BidMapEditor
               contract={contract}
