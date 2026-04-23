@@ -80,7 +80,7 @@ export function AppShell() {
             <SidebarMenuItem>
               <SidebarMenuButton size="default" asChild tooltip="Map App">
                 <NavLink to="/">
-                  <Map className="!size-5 text-primary" />
+                  <Map className="!size-5 -ml-0.5 text-primary" />
                   <span className="truncate font-semibold group-data-[collapsible=icon]:hidden">Map App</span>
                 </NavLink>
               </SidebarMenuButton>
