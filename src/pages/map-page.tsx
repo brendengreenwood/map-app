@@ -137,9 +137,9 @@ export default function MapPage() {
           {/* Floating back button (normal mode only) */}
           {!isBidMode && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="absolute top-3 left-3 z-30 size-9 rounded-full !bg-card shadow-md animate-in fade-in slide-in-from-left-2 duration-200"
+              className="absolute top-3 left-3 z-30 size-9 rounded-full bg-card shadow-md hover:bg-muted hover:ring-1 hover:ring-ring/30 animate-in fade-in slide-in-from-left-2 duration-200"
               onClick={() => navigate('/')}
             >
               <ArrowLeft />
