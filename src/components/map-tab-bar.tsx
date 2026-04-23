@@ -57,7 +57,7 @@ export function MapTabBar({
       )}
 
       {/* Tab strip */}
-      <div className="flex min-w-0 flex-1 items-end gap-1 overflow-x-auto pl-1">
+      <div className="flex min-w-0 flex-1 items-end gap-1 overflow-x-auto overflow-y-hidden pl-1">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           const Icon = tab.icon;
