@@ -78,9 +78,9 @@ export function AppShell() {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild tooltip="Map App">
+              <SidebarMenuButton size="default" asChild tooltip="Map App">
                 <NavLink to="/">
-                  <Map className="!size-5 shrink-0 text-primary" />
+                  <Map className="!size-5 text-primary" />
                   <span className="truncate font-semibold group-data-[collapsible=icon]:hidden">Map App</span>
                 </NavLink>
               </SidebarMenuButton>
