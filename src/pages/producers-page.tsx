@@ -16,20 +16,16 @@ import { PageHeader } from '@/components/page-header';
 import { toast } from 'sonner';
 import {
   fetchProducers, createProducer, deleteProducer, type ProducerRow,
+  fetchElevators, type ElevatorRow,
 } from '@/lib/api';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // ── Stepped form state ──
 
-interface LocationDraft {
-  name: string;
-  address: string;
-  lng: string;
-  lat: string;
-}
-
+interface LocationDraft { name: string; address: string; lng: string; lat: string }
 const emptyLocation = (): LocationDraft => ({ name: '', address: '', lng: '', lat: '' });
 
-const STEPS = ['Details', 'Bin Locations', 'Review'] as const;
+const STEPS = ['Details', 'Bin Locations', 'Delivery Locations', 'Review'] as const;
 type Step = (typeof STEPS)[number];
 
 export default function ProducersPage() {
@@ -52,8 +48,13 @@ export default function ProducersPage() {
   const [lat, setLat] = useState('');
   const [commodities, setCommodities] = useState('');
 
-  // Form fields — step 2
+  // Form fields — step 2: Bin Locations
   const [locations, setLocations] = useState<LocationDraft[]>([emptyLocation()]);
+
+  // Form fields — step 3: Delivery Locations (elevators)
+  const [elevators, setElevators] = useState<ElevatorRow[]>([]);
+  const [elevatorsLoading, setElevatorsLoading] = useState(false);
+  const [selectedElevatorIds, setSelectedElevatorIds] = useState<Set<string>>(new Set());
 
   const reload = useCallback(async () => {
     try {
@@ -77,12 +78,37 @@ export default function ProducersPage() {
     setLat('');
     setCommodities('');
     setLocations([emptyLocation()]);
+    setSelectedElevatorIds(new Set());
     setStep('Details');
   };
 
-  const handleOpen = () => {
+  const handleOpen = async () => {
     resetForm();
     setOpen(true);
+    setElevatorsLoading(true);
+    try {
+      const { elevators } = await fetchElevators();
+      setElevators(elevators);
+    } catch {
+      // Elevators list is non-critical; form still works
+    } finally {
+      setElevatorsLoading(false);
+    }
+  };
+
+  const addLocation = () => setLocations((prev) => [...prev, emptyLocation()]);
+  const removeLocation = (i: number) =>
+    setLocations((prev) => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i));
+  const updateLocation = (i: number, field: keyof LocationDraft, value: string) =>
+    setLocations((prev) => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
+
+  const toggleElevator = (id: string) => {
+    setSelectedElevatorIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const handleSubmit = async () => {
@@ -97,7 +123,6 @@ export default function ProducersPage() {
           lng: l.lng.trim() ? parseFloat(l.lng) : undefined,
           lat: l.lat.trim() ? parseFloat(l.lat) : undefined,
         }));
-
       await createProducer({
         id: crypto.randomUUID(),
         name: name.trim(),
@@ -108,7 +133,8 @@ export default function ProducersPage() {
         commodities: commodities.trim()
           ? commodities.split(',').map((c) => c.trim()).filter(Boolean)
           : undefined,
-        locations: validLocations.length ? validLocations : undefined,
+        locations: validLocations.length > 0 ? validLocations : undefined,
+        elevator_ids: selectedElevatorIds.size > 0 ? [...selectedElevatorIds] : undefined,
       });
       setOpen(false);
       toast.success('Producer created');
@@ -132,12 +158,6 @@ export default function ProducersPage() {
       setDeletingId(null);
     }
   };
-
-  const addLocation = () => setLocations((prev) => [...prev, emptyLocation()]);
-  const removeLocation = (i: number) =>
-    setLocations((prev) => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i));
-  const updateLocation = (i: number, field: keyof LocationDraft, value: string) =>
-    setLocations((prev) => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
 
   const stepIndex = STEPS.indexOf(step);
   const canNext = step === 'Details' ? name.trim().length > 0 : true;
@@ -214,12 +234,12 @@ export default function ProducersPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {p.locations.length > 0 ? (
+                      {p.elevators.length > 0 ? (
                         <div className="flex gap-1 flex-wrap">
-                          {p.locations.map((loc) => (
-                            <Badge key={loc.id} variant="outline" className="gap-1">
+                          {p.elevators.map((e) => (
+                            <Badge key={e.id} variant="outline" className="gap-1">
                               <MapPin className="size-3" />
-                              {loc.name}
+                              {e.name}
                             </Badge>
                           ))}
                         </div>
@@ -301,7 +321,7 @@ export default function ProducersPage() {
             {step === 'Bin Locations' && (
               <div className="flex flex-col gap-4">
                 <p className="text-sm text-muted-foreground">
-                  Add bin / elevator locations for this producer. You can skip this step.
+                  Add bin storage locations for this producer. You can skip this step.
                 </p>
                 {locations.map((loc, i) => (
                   <Card key={i}>
@@ -344,7 +364,47 @@ export default function ProducersPage() {
               </div>
             )}
 
-            {/* Step 3: Review */}
+            {/* Step 3: Delivery Locations */}
+            {step === 'Delivery Locations' && (
+              <div className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Select the elevators this producer delivers to. You can skip this step.
+                </p>
+                {elevatorsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Spinner />
+                  </div>
+                ) : elevators.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                    <MapPin className="size-8 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground">No elevators found</p>
+                    <p className="text-xs text-muted-foreground/75">Add elevators from the map first.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    {elevators.map((e) => (
+                      <label
+                        key={e.id}
+                        className="flex items-center gap-3 rounded-md border px-3 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors has-[data-checked]:border-primary/50 has-[data-checked]:bg-primary/5"
+                      >
+                        <Checkbox
+                          checked={selectedElevatorIds.has(e.id)}
+                          onCheckedChange={() => toggleElevator(e.id)}
+                        />
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="text-sm font-medium truncate">{e.name}</span>
+                          {e.address && (
+                            <span className="text-xs text-muted-foreground truncate">{e.address}</span>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 4: Review */}
             {step === 'Review' && (
               <div className="flex flex-col gap-4">
                 <div className="rounded-md border p-4">
@@ -397,6 +457,26 @@ export default function ProducersPage() {
                           )}
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+                {selectedElevatorIds.size > 0 && (
+                  <div className="rounded-md border p-4">
+                    <h3 className="text-sm font-medium mb-3">
+                      Delivery Locations ({selectedElevatorIds.size})
+                    </h3>
+                    <div className="flex flex-col gap-2">
+                      {elevators
+                        .filter((e) => selectedElevatorIds.has(e.id))
+                        .map((e) => (
+                          <div key={e.id} className="flex items-center gap-2 text-sm">
+                            <MapPin className="size-3.5 text-muted-foreground shrink-0" />
+                            <span className="font-medium">{e.name}</span>
+                            {e.address && (
+                              <span className="text-muted-foreground">— {e.address}</span>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   </div>
                 )}
