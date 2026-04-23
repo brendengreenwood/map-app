@@ -223,12 +223,12 @@ export default function MapPage() {
           }
           inlineAction={
             <Button
-              variant="ghost"
-              size="icon-sm"
+              variant="secondary"
+              size="sm"
               onClick={addTosWindow}
-              title="Add Time of Shipment"
             >
               <Plus className="size-4" />
+              Add TOS
             </Button>
           }
           trailingAction={
