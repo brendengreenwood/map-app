@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useMatch } from 'react-router-dom';
 import { Map, LayoutDashboard, Settings, Shield, Sun, Moon, Monitor, Wheat, Building2, TrendingUp } from 'lucide-react';
 import {
   Sidebar,
@@ -52,6 +52,20 @@ function ThemeToggle() {
   );
 }
 
+function NavItem({ item }: { item: typeof navItems[number] }) {
+  const match = useMatch(item.path === '/' ? '/' : `${item.path}/*`);
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={!!match} tooltip={item.title}>
+        <NavLink to={item.path}>
+          <item.icon />
+          <span>{item.title}</span>
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
 export function AppShell() {
   const { activeUser } = useUsers();
   const isAdmin = activeUser.types.includes('admin');
@@ -84,20 +98,7 @@ export function AppShell() {
                 {navItems
                   .filter((item) => !('adminOnly' in item && item.adminOnly) || isAdmin)
                   .map((item) => (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild tooltip={item.title}>
-                      <NavLink
-                        to={item.path}
-                        className={({ isActive }) =>
-                          isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''
-                        }
-                        end={item.path === '/'}
-                      >
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <NavItem key={item.path} item={item} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
