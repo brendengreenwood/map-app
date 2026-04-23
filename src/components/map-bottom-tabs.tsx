@@ -263,7 +263,7 @@ export function MapBottomTabs({
   return (
     <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex flex-col items-center pb-3 px-3">
       {/* Tab bar — floating pill */}
-      <div className="relative flex w-full max-w-md rounded-2xl border bg-background/90 shadow-lg backdrop-blur-sm">
+      <div className="relative flex w-full max-w-md rounded-2xl border bg-card shadow-lg">
         {tabs.map((tab) => (
           <div key={tab.id} className="relative flex-1">
             {/* Panel slides up from this tab */}
