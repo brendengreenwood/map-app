@@ -40,7 +40,7 @@ const LIGHT_OVERRIDES: LayerOverride[] = [
 ];
 
 const DARK_OVERRIDES: LayerOverride[] = [
-  { id: 'background', overrides: [{ property: 'background-color', value: '#1a1d1b' }] },
+  { id: 'background', overrides: [{ property: 'background-color', value: '#131614' }] },
   { id: 'water', overrides: [{ property: 'fill-color', value: SPROUT.waterDark }] },
   { id: 'landcover', overrides: [{ property: 'fill-color', value: SPROUT.neutral900 }] },
   { id: 'park_national_park', overrides: [{ property: 'fill-color', value: '#2a3328' }] },
