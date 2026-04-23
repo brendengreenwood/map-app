@@ -643,6 +643,141 @@ app.delete('/api/competitors/:id', (req, res) => {
   res.json({ deleted: result.changes });
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// ── SCENARIOS (merchant bid pricing models) ──
+// ═══════════════════════════════════════════════════════════════════
+
+interface ScenarioRow {
+  id: string;
+  merchant_user_id: string;
+  elevator_id: string;
+  contract_code: string;
+  contract_label: string;
+  posted: number;
+  max: number;
+  leeway: number;
+  increment: number;
+  freight: number;
+  is_active: number;
+  updated_by: string | null;
+  created_at: string;
+}
+
+interface ScenarioWindowRow {
+  id: string;
+  scenario_id: string;
+  window_code: string;
+  window_label: string;
+  is_override: number;
+  posted: number | null;
+  max: number | null;
+  leeway: number | null;
+  increment: number | null;
+  freight: number | null;
+}
+
+const scenarioWindowStmt = db.prepare('SELECT * FROM scenario_windows WHERE scenario_id = ? ORDER BY window_code');
+
+function enrichScenario(row: ScenarioRow) {
+  const elevator = db.prepare('SELECT name FROM elevators WHERE id = ?').get(row.elevator_id) as { name: string } | undefined;
+  return {
+    ...row,
+    elevator_name: elevator?.name ?? null,
+    windows: scenarioWindowStmt.all(row.id) as ScenarioWindowRow[],
+  };
+}
+
+// GET /api/scenarios — fetch active scenarios for a merchant
+app.get('/api/scenarios', (req, res) => {
+  const merchantUserId = req.query.merchant_user_id as string | undefined;
+  if (!merchantUserId) return res.status(400).json({ error: 'merchant_user_id is required' });
+
+  const rows = db.prepare(
+    'SELECT * FROM scenarios WHERE merchant_user_id = ? AND is_active = 1 ORDER BY contract_code'
+  ).all(merchantUserId) as ScenarioRow[];
+
+  res.json({ scenarios: rows.map(enrichScenario) });
+});
+
+// GET /api/scenarios/check — check if an active scenario exists for a combo
+app.get('/api/scenarios/check', (req, res) => {
+  const { merchant_user_id, elevator_id, contract_code } = req.query;
+  if (!merchant_user_id || !elevator_id || !contract_code) {
+    return res.status(400).json({ error: 'merchant_user_id, elevator_id, and contract_code are required' });
+  }
+
+  const row = db.prepare(
+    'SELECT * FROM scenarios WHERE merchant_user_id = ? AND elevator_id = ? AND contract_code = ? AND is_active = 1'
+  ).get(merchant_user_id, elevator_id, contract_code) as ScenarioRow | undefined;
+
+  res.json({ exists: !!row, scenario: row ? enrichScenario(row) : null });
+});
+
+// POST /api/scenarios — create a new scenario (optionally replacing existing)
+app.post('/api/scenarios', (req, res) => {
+  const {
+    id, merchant_user_id, elevator_id, contract_code, contract_label,
+    posted, max, leeway, increment, freight, updated_by, windows, replace,
+  } = req.body;
+
+  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
+  if (!isNonEmptyString(merchant_user_id)) return res.status(400).json({ error: 'merchant_user_id is required' });
+  if (!isNonEmptyString(elevator_id)) return res.status(400).json({ error: 'elevator_id is required' });
+  if (!isNonEmptyString(contract_code)) return res.status(400).json({ error: 'contract_code is required' });
+  if (!isNonEmptyString(contract_label)) return res.status(400).json({ error: 'contract_label is required' });
+  if (typeof posted !== 'number') return res.status(400).json({ error: 'posted must be a number' });
+  if (typeof max !== 'number') return res.status(400).json({ error: 'max must be a number' });
+  if (typeof leeway !== 'number') return res.status(400).json({ error: 'leeway must be a number' });
+  if (typeof increment !== 'number') return res.status(400).json({ error: 'increment must be a number' });
+  if (typeof freight !== 'number') return res.status(400).json({ error: 'freight must be a number' });
+
+  // Check for existing active scenario for same combo
+  const existing = db.prepare(
+    'SELECT id FROM scenarios WHERE merchant_user_id = ? AND elevator_id = ? AND contract_code = ? AND is_active = 1'
+  ).get(merchant_user_id, elevator_id, contract_code) as { id: string } | undefined;
+
+  if (existing && !replace) {
+    return res.status(409).json({ error: 'An active scenario already exists for this combination', existing_id: existing.id });
+  }
+
+  const createScenario = db.transaction(() => {
+    // Deactivate existing scenario if replacing
+    if (existing) {
+      db.prepare('UPDATE scenarios SET is_active = 0 WHERE id = ?').run(existing.id);
+    }
+
+    // Insert new scenario
+    db.prepare(
+      'INSERT INTO scenarios (id, merchant_user_id, elevator_id, contract_code, contract_label, posted, max, leeway, increment, freight, is_active, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)'
+    ).run(id, merchant_user_id, elevator_id, sanitize(contract_code), sanitize(contract_label), posted, max, leeway, increment, freight, updated_by ? sanitize(updated_by) : null);
+
+    // Insert windows
+    if (windows && Array.isArray(windows)) {
+      const stmt = db.prepare(
+        'INSERT INTO scenario_windows (id, scenario_id, window_code, window_label, is_override, posted, max, leeway, increment, freight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      );
+      for (const w of windows) {
+        if (!isNonEmptyString(w.window_code) || !isNonEmptyString(w.window_label)) continue;
+        stmt.run(
+          w.id ?? crypto.randomUUID(), id, sanitize(w.window_code), sanitize(w.window_label),
+          w.is_override ? 1 : 0, w.posted ?? null, w.max ?? null, w.leeway ?? null, w.increment ?? null, w.freight ?? null
+        );
+      }
+    }
+  });
+
+  createScenario();
+
+  const row = db.prepare('SELECT * FROM scenarios WHERE id = ?').get(id) as ScenarioRow;
+  res.status(201).json(enrichScenario(row));
+});
+
+// DELETE /api/scenarios/:id — delete a scenario and its windows (cascade)
+app.delete('/api/scenarios/:id', (req, res) => {
+  const result = db.prepare('DELETE FROM scenarios WHERE id = ?').run(req.params.id);
+  res.json({ deleted: result.changes });
+});
+
 app.listen(PORT, () => {
   console.log(`API server running at http://localhost:${PORT}`);
 });

@@ -370,3 +370,83 @@ export async function updateCompetitor(id: string, data: {
 export async function deleteCompetitor(id: string): Promise<{ deleted: number }> {
   return apiFetch(`${API_URL}/api/competitors/${id}`, { method: 'DELETE' });
 }
+
+// ── Scenarios (merchant bid pricing models) ──
+
+export interface ScenarioWindowRow {
+  id: string;
+  scenario_id: string;
+  window_code: string;
+  window_label: string;
+  is_override: number;
+  posted: number | null;
+  max: number | null;
+  leeway: number | null;
+  increment: number | null;
+  freight: number | null;
+}
+
+export interface ScenarioRow {
+  id: string;
+  merchant_user_id: string;
+  elevator_id: string;
+  contract_code: string;
+  contract_label: string;
+  posted: number;
+  max: number;
+  leeway: number;
+  increment: number;
+  freight: number;
+  is_active: number;
+  updated_by: string | null;
+  created_at: string;
+  elevator_name: string | null;
+  windows: ScenarioWindowRow[];
+}
+
+export async function fetchScenarios(merchantUserId: string): Promise<{ scenarios: ScenarioRow[] }> {
+  return apiFetch(`${API_URL}/api/scenarios?merchant_user_id=${merchantUserId}`);
+}
+
+export async function checkScenarioExists(
+  merchantUserId: string, elevatorId: string, contractCode: string
+): Promise<{ exists: boolean; scenario: ScenarioRow | null }> {
+  const qs = new URLSearchParams({ merchant_user_id: merchantUserId, elevator_id: elevatorId, contract_code: contractCode });
+  return apiFetch(`${API_URL}/api/scenarios/check?${qs}`);
+}
+
+export async function createScenario(scenario: {
+  id: string;
+  merchant_user_id: string;
+  elevator_id: string;
+  contract_code: string;
+  contract_label: string;
+  posted: number;
+  max: number;
+  leeway: number;
+  increment: number;
+  freight: number;
+  updated_by?: string;
+  replace?: boolean;
+  windows?: {
+    id?: string;
+    window_code: string;
+    window_label: string;
+    is_override?: boolean;
+    posted?: number;
+    max?: number;
+    leeway?: number;
+    increment?: number;
+    freight?: number;
+  }[];
+}): Promise<ScenarioRow> {
+  return apiFetch(`${API_URL}/api/scenarios`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(scenario),
+  });
+}
+
+export async function deleteScenario(id: string): Promise<{ deleted: number }> {
+  return apiFetch(`${API_URL}/api/scenarios/${id}`, { method: 'DELETE' });
+}

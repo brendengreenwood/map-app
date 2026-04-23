@@ -2,35 +2,40 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import {
-  type CornContract,
-  PRICING_DATA,
-  DELIVERY_WINDOWS,
-  getWindowPricing,
-  formatBasis,
-  formatFreight,
-} from '@/lib/bid-data';
-import { ChevronDown, Eye, Pencil } from 'lucide-react';
-
-// ── Main contract row + expandable windows ────────────────
+import { formatBasis, formatFreight } from '@/lib/bid-data';
+import type { ScenarioRow, ScenarioWindowRow } from '@/lib/api';
+import { ChevronDown, Eye, Pencil, Trash2 } from 'lucide-react';
 
 interface BidContractRowProps {
-  contract: CornContract;
+  scenario: ScenarioRow;
   expanded: boolean;
   onToggle: () => void;
   onRevise: () => void;
+  onDelete: () => void;
   onReviseWindow?: (windowCode: string) => void;
 }
 
+function getWindowPricing(scenario: ScenarioRow, window: ScenarioWindowRow) {
+  const isOverride = window.is_override === 1;
+  return {
+    posted: window.posted ?? scenario.posted,
+    max: window.max ?? scenario.max,
+    leeway: window.leeway ?? scenario.leeway,
+    increment: window.increment ?? scenario.increment,
+    freight: window.freight ?? scenario.freight,
+    isOverride,
+  };
+}
+
 export function BidContractRow({
-  contract,
+  scenario,
   expanded,
   onToggle,
   onRevise,
+  onDelete,
   onReviseWindow,
 }: BidContractRowProps) {
-  const p = PRICING_DATA[contract.code];
-  const windows = DELIVERY_WINDOWS[contract.code] ?? [];
+  const windows = scenario.windows ?? [];
 
   return (
     <>
@@ -48,25 +53,25 @@ export function BidContractRow({
           />
         </TableCell>
         <TableCell className="font-semibold">
-          <div>{contract.label}</div>
+          <div>{scenario.contract_label}</div>
           <div className="text-[10px] font-normal text-muted-foreground">
-            ZC · {contract.code}
+            ZC · {scenario.contract_code}
           </div>
         </TableCell>
         <TableCell className="tabular-nums font-semibold">
-          {formatBasis(p.posted)}
+          {formatBasis(scenario.posted)}
         </TableCell>
         <TableCell className="tabular-nums">
-          {formatBasis(p.max)}
+          {formatBasis(scenario.max)}
         </TableCell>
-        <TableCell className="tabular-nums">{p.leeway}¢</TableCell>
-        <TableCell className="tabular-nums">{p.increment}¢</TableCell>
+        <TableCell className="tabular-nums">{scenario.leeway}¢</TableCell>
+        <TableCell className="tabular-nums">{scenario.increment}¢</TableCell>
         <TableCell className="tabular-nums">
-          {formatFreight(p.freight)}
+          {formatFreight(scenario.freight)}
         </TableCell>
         <TableCell className="text-right text-xs text-muted-foreground">
-          <div>{p.updated}</div>
-          <div>{p.by}</div>
+          <div>{new Date(scenario.created_at).toLocaleDateString()}</div>
+          {scenario.updated_by && <div>{scenario.updated_by}</div>}
         </TableCell>
         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-end gap-1">
@@ -78,6 +83,9 @@ export function BidContractRow({
               <Pencil data-icon="inline-start" />
               Revise
             </Button>
+            <Button variant="ghost" size="sm" onClick={onDelete}>
+              <Trash2 className="size-3.5" />
+            </Button>
           </div>
         </TableCell>
       </TableRow>
@@ -85,16 +93,16 @@ export function BidContractRow({
       {/* Expanded delivery windows */}
       {expanded &&
         windows.map((w) => {
-          const wp = getWindowPricing(contract.code, w.code);
+          const wp = getWindowPricing(scenario, w);
           return (
             <TableRow
-              key={w.code}
+              key={w.window_code}
               className="bg-muted/30 hover:bg-muted/50"
             >
               <TableCell className="pl-3 pr-0" />
               <TableCell className="pl-8">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm">{w.label}</span>
+                  <span className="text-sm">{w.window_label}</span>
                   {wp.isOverride ? (
                     <Badge variant="default" className="h-4 px-1 text-[9px]">
                       override
@@ -106,7 +114,7 @@ export function BidContractRow({
                   )}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {w.code}
+                  {w.window_code}
                 </div>
               </TableCell>
               <TableCell
@@ -139,7 +147,7 @@ export function BidContractRow({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onReviseWindow?.(w.code)}
+                    onClick={() => onReviseWindow?.(w.window_code)}
                   >
                     <Pencil data-icon="inline-start" />
                     Revise
