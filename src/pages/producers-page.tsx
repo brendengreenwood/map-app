@@ -187,10 +187,11 @@ export default function ProducersPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Business</TableHead>
-                  <TableHead>Address</TableHead>
-                  <TableHead>Locations</TableHead>
-                  <TableHead>Commodities</TableHead>
-                  <TableHead className="text-right">Created</TableHead>
+                  <TableHead>Commodity</TableHead>
+                  <TableHead>Delivery Location</TableHead>
+                  <TableHead>Last Spot</TableHead>
+                  <TableHead>Last Delivery</TableHead>
+                  <TableHead>Last Contact</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -201,8 +202,16 @@ export default function ProducersPage() {
                     <TableCell className="text-muted-foreground">
                       {p.business_name ?? '—'}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {p.address ?? '—'}
+                    <TableCell>
+                      {p.commodities.length > 0 ? (
+                        <div className="flex gap-1 flex-wrap">
+                          {p.commodities.map((c) => (
+                            <Badge key={c} variant="secondary">{c}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {p.locations.length > 0 ? (
@@ -218,20 +227,9 @@ export default function ProducersPage() {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell>
-                      {p.commodities.length > 0 ? (
-                        <div className="flex gap-1 flex-wrap">
-                          {p.commodities.map((c) => (
-                            <Badge key={c} variant="secondary">{c}</Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">
-                      {new Date(p.created_at).toLocaleDateString()}
-                    </TableCell>
+                    <TableCell className="text-muted-foreground">—</TableCell>
+                    <TableCell className="text-muted-foreground">—</TableCell>
+                    <TableCell className="text-muted-foreground">—</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="text-destructive" disabled={deletingId === p.id} onClick={() => handleDelete(p.id)}>
                         {deletingId === p.id ? <Spinner /> : <Trash2 />}
