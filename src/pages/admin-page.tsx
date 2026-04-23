@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import {
   fetchElevators, updateElevator,
   fetchAssignments, createAssignment, deleteAssignment,
-  fetchUsers,
+  fetchUsers, formatAddress,
   type ElevatorRow, type AssignmentRow, type UserRow,
 } from '@/lib/api';
 
@@ -148,7 +148,7 @@ function AdminContent() {
                 <div key={elevator.id} className="flex items-center justify-between gap-4 py-2">
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <span className="font-medium text-sm truncate">{elevator.name}</span>
-                    <span className="text-xs text-muted-foreground">{elevator.address}</span>
+                    <span className="text-xs text-muted-foreground">{formatAddress(elevator) || elevator.address}</span>
                     <div className="flex gap-1 mt-0.5">
                       {elevator.commodities.map((c) => (
                         <Badge key={c} variant="secondary" className="text-[10px] px-1.5 py-0">{c}</Badge>

@@ -16,14 +16,14 @@ import { PageHeader } from '@/components/page-header';
 import { toast } from 'sonner';
 import {
   fetchProducers, createProducer, deleteProducer, type ProducerRow,
-  fetchElevators, type ElevatorRow,
+  fetchElevators, type ElevatorRow, formatAddress,
 } from '@/lib/api';
 import { Checkbox } from '@/components/ui/checkbox';
 
 // ── Stepped form state ──
 
-interface LocationDraft { name: string; address: string; lng: string; lat: string }
-const emptyLocation = (): LocationDraft => ({ name: '', address: '', lng: '', lat: '' });
+interface LocationDraft { name: string; street: string; city: string; state: string; zip: string; lng: string; lat: string }
+const emptyLocation = (): LocationDraft => ({ name: '', street: '', city: '', state: '', zip: '', lng: '', lat: '' });
 
 const STEPS = ['Details', 'Bin Locations', 'Delivery Locations', 'Review'] as const;
 type Step = (typeof STEPS)[number];
@@ -43,7 +43,10 @@ export default function ProducersPage() {
   // Form fields — step 1
   const [name, setName] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [address, setAddress] = useState('');
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
+  const [addrState, setAddrState] = useState('');
+  const [zip, setZip] = useState('');
   const [lng, setLng] = useState('');
   const [lat, setLat] = useState('');
   const [commodities, setCommodities] = useState('');
@@ -73,7 +76,10 @@ export default function ProducersPage() {
   const resetForm = () => {
     setName('');
     setBusinessName('');
-    setAddress('');
+    setStreet('');
+    setCity('');
+    setAddrState('');
+    setZip('');
     setLng('');
     setLat('');
     setCommodities('');
@@ -119,7 +125,10 @@ export default function ProducersPage() {
         .filter((l) => l.name.trim())
         .map((l) => ({
           name: l.name.trim(),
-          address: l.address.trim() || undefined,
+          street: l.street.trim() || undefined,
+          city: l.city.trim() || undefined,
+          state: l.state.trim() || undefined,
+          zip: l.zip.trim() || undefined,
           lng: l.lng.trim() ? parseFloat(l.lng) : undefined,
           lat: l.lat.trim() ? parseFloat(l.lat) : undefined,
         }));
@@ -129,7 +138,10 @@ export default function ProducersPage() {
         business_name: businessName.trim() || undefined,
         lng: lng.trim() ? parseFloat(lng) : undefined,
         lat: lat.trim() ? parseFloat(lat) : undefined,
-        address: address.trim() || undefined,
+        street: street.trim() || undefined,
+        city: city.trim() || undefined,
+        state: addrState.trim() || undefined,
+        zip: zip.trim() || undefined,
         commodities: commodities.trim()
           ? commodities.split(',').map((c) => c.trim()).filter(Boolean)
           : undefined,
@@ -297,8 +309,22 @@ export default function ProducersPage() {
                   <Input id="p-biz" placeholder="e.g. Smith Family Farms LLC" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="p-addr">Address</FieldLabel>
-                  <Input id="p-addr" placeholder="e.g. 123 County Rd, Iowa" value={address} onChange={(e) => setAddress(e.target.value)} />
+                  <FieldLabel htmlFor="p-street">Street Address</FieldLabel>
+                  <Input id="p-street" placeholder="e.g. 123 County Rd" value={street} onChange={(e) => setStreet(e.target.value)} />
+                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="p-city">City</FieldLabel>
+                    <Input id="p-city" placeholder="e.g. Des Moines" value={city} onChange={(e) => setCity(e.target.value)} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="p-state">State</FieldLabel>
+                    <Input id="p-state" placeholder="e.g. IA" value={addrState} onChange={(e) => setAddrState(e.target.value)} />
+                  </Field>
+                </div>
+                <Field>
+                  <FieldLabel htmlFor="p-zip">Zip Code</FieldLabel>
+                  <Input id="p-zip" placeholder="e.g. 50309" value={zip} onChange={(e) => setZip(e.target.value)} />
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
                   <Field>
@@ -340,8 +366,22 @@ export default function ProducersPage() {
                           <Input id={`loc-name-${i}`} placeholder="e.g. North Bin Site" value={loc.name} onChange={(e) => updateLocation(i, 'name', e.target.value)} />
                         </Field>
                         <Field>
-                          <FieldLabel htmlFor={`loc-addr-${i}`}>Address</FieldLabel>
-                          <Input id={`loc-addr-${i}`} placeholder="e.g. 456 Grain Rd" value={loc.address} onChange={(e) => updateLocation(i, 'address', e.target.value)} />
+                          <FieldLabel htmlFor={`loc-street-${i}`}>Street Address</FieldLabel>
+                          <Input id={`loc-street-${i}`} placeholder="e.g. 456 Grain Rd" value={loc.street} onChange={(e) => updateLocation(i, 'street', e.target.value)} />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Field>
+                            <FieldLabel htmlFor={`loc-city-${i}`}>City</FieldLabel>
+                            <Input id={`loc-city-${i}`} placeholder="e.g. Des Moines" value={loc.city} onChange={(e) => updateLocation(i, 'city', e.target.value)} />
+                          </Field>
+                          <Field>
+                            <FieldLabel htmlFor={`loc-state-${i}`}>State</FieldLabel>
+                            <Input id={`loc-state-${i}`} placeholder="e.g. IA" value={loc.state} onChange={(e) => updateLocation(i, 'state', e.target.value)} />
+                          </Field>
+                        </div>
+                        <Field>
+                          <FieldLabel htmlFor={`loc-zip-${i}`}>Zip Code</FieldLabel>
+                          <Input id={`loc-zip-${i}`} placeholder="e.g. 50309" value={loc.zip} onChange={(e) => updateLocation(i, 'zip', e.target.value)} />
                         </Field>
                         <div className="grid grid-cols-2 gap-3">
                           <Field>
@@ -393,8 +433,8 @@ export default function ProducersPage() {
                         />
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <span className="text-sm font-medium truncate">{e.name}</span>
-                          {e.address && (
-                            <span className="text-xs text-muted-foreground truncate">{e.address}</span>
+                          {(formatAddress(e) || e.address) && (
+                            <span className="text-xs text-muted-foreground truncate">{formatAddress(e) || e.address}</span>
                           )}
                         </div>
                       </label>
@@ -418,10 +458,10 @@ export default function ProducersPage() {
                         <dd>{businessName}</dd>
                       </>
                     )}
-                    {address && (
+                    {(street || city || addrState || zip) && (
                       <>
                         <dt className="text-muted-foreground">Address</dt>
-                        <dd>{address}</dd>
+                        <dd>{formatAddress({ street, city, state: addrState, zip })}</dd>
                       </>
                     )}
                     {(lng || lat) && (
@@ -448,15 +488,18 @@ export default function ProducersPage() {
                       Bin Locations ({validLocations.length})
                     </h3>
                     <div className="flex flex-col gap-2">
-                      {validLocations.map((loc, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
-                          <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-                          <span className="font-medium">{loc.name}</span>
-                          {loc.address && (
-                            <span className="text-muted-foreground">— {loc.address}</span>
-                          )}
-                        </div>
-                      ))}
+                      {validLocations.map((loc, i) => {
+                        const locAddr = formatAddress({ street: loc.street, city: loc.city, state: loc.state, zip: loc.zip });
+                        return (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <MapPin className="size-3.5 text-muted-foreground shrink-0" />
+                            <span className="font-medium">{loc.name}</span>
+                            {locAddr && (
+                              <span className="text-muted-foreground">— {locAddr}</span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -468,15 +511,18 @@ export default function ProducersPage() {
                     <div className="flex flex-col gap-2">
                       {elevators
                         .filter((e) => selectedElevatorIds.has(e.id))
-                        .map((e) => (
-                          <div key={e.id} className="flex items-center gap-2 text-sm">
-                            <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-                            <span className="font-medium">{e.name}</span>
-                            {e.address && (
-                              <span className="text-muted-foreground">— {e.address}</span>
-                            )}
-                          </div>
-                        ))}
+                        .map((e) => {
+                          const elevAddr = formatAddress(e) || e.address;
+                          return (
+                            <div key={e.id} className="flex items-center gap-2 text-sm">
+                              <MapPin className="size-3.5 text-muted-foreground shrink-0" />
+                              <span className="font-medium">{e.name}</span>
+                              {elevAddr && (
+                                <span className="text-muted-foreground">— {elevAddr}</span>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 )}

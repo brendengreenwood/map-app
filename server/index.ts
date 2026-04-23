@@ -281,6 +281,10 @@ interface ElevatorRow {
   lng: number;
   lat: number;
   address: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   created_at: string;
 }
 
@@ -301,14 +305,15 @@ app.get('/api/elevators', (req, res) => {
 });
 
 app.post('/api/elevators', (req, res) => {
-  const { id, merchant_user_id, name, lng, lat, address, commodities } = req.body;
+  const { id, merchant_user_id, name, lng, lat, address, street, city, state, zip, commodities } = req.body;
   if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
   if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
   if (!isValidLng(lng) || !isValidLat(lat)) return res.status(400).json({ error: 'Valid lng/lat are required' });
   if (commodities !== undefined && !isStringArray(commodities)) return res.status(400).json({ error: 'commodities must be a string array' });
 
-  db.prepare('INSERT INTO elevators (id, merchant_user_id, name, lng, lat, address) VALUES (?, ?, ?, ?, ?, ?)').run(
-    id, merchant_user_id ?? null, sanitize(name), lng, lat, address ? sanitize(address) : null
+  db.prepare('INSERT INTO elevators (id, merchant_user_id, name, lng, lat, address, street, city, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+    id, merchant_user_id ?? null, sanitize(name), lng, lat, address ? sanitize(address) : null,
+    street ? sanitize(street) : null, city ? sanitize(city) : null, state ? sanitize(state) : null, zip ? sanitize(zip) : null
   );
   if (commodities) {
     const safeCommodities = sanitizeArray(commodities);
@@ -321,7 +326,7 @@ app.post('/api/elevators', (req, res) => {
 });
 
 app.put('/api/elevators/:id', (req, res) => {
-  const { name, lng, lat, address, commodities, merchant_user_id } = req.body;
+  const { name, lng, lat, address, street, city, state, zip, commodities, merchant_user_id } = req.body;
   const updates: string[] = [];
   const params: (string | number | null)[] = [];
   if (name !== undefined) { updates.push('name = ?'); params.push(name); }
@@ -329,6 +334,10 @@ app.put('/api/elevators/:id', (req, res) => {
   if (lng !== undefined) { updates.push('lng = ?'); params.push(lng); }
   if (lat !== undefined) { updates.push('lat = ?'); params.push(lat); }
   if (address !== undefined) { updates.push('address = ?'); params.push(address); }
+  if (street !== undefined) { updates.push('street = ?'); params.push(street); }
+  if (city !== undefined) { updates.push('city = ?'); params.push(city); }
+  if (state !== undefined) { updates.push('state = ?'); params.push(state); }
+  if (zip !== undefined) { updates.push('zip = ?'); params.push(zip); }
   if (updates.length > 0) {
     params.push(req.params.id);
     db.prepare(`UPDATE elevators SET ${updates.join(', ')} WHERE id = ?`).run(...params);
@@ -399,6 +408,10 @@ interface ProducerRow {
   lng: number | null;
   lat: number | null;
   address: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   created_at: string;
 }
 
@@ -407,6 +420,10 @@ interface ProducerLocationRow {
   producer_id: string;
   name: string;
   address: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   lng: number | null;
   lat: number | null;
   created_at: string;
@@ -415,6 +432,9 @@ interface ProducerLocationRow {
 const producerCommodityStmt = db.prepare('SELECT commodity FROM producer_commodities WHERE producer_id = ?');
 const producerAssignmentStmt = db.prepare('SELECT originator_user_id FROM producer_assignments WHERE producer_id = ?');
 const producerLocationStmt = db.prepare('SELECT * FROM producer_locations WHERE producer_id = ? ORDER BY name');
+const producerElevatorStmt = db.prepare(
+  'SELECT e.id, e.name, e.address, e.street, e.city, e.state, e.zip FROM elevators e JOIN producer_elevators pe ON e.id = pe.elevator_id WHERE pe.producer_id = ?'
+);
 
 function enrichProducer(row: ProducerRow) {
   return {
@@ -422,6 +442,7 @@ function enrichProducer(row: ProducerRow) {
     commodities: (producerCommodityStmt.all(row.id) as { commodity: string }[]).map((c) => c.commodity),
     originator_user_ids: (producerAssignmentStmt.all(row.id) as { originator_user_id: string }[]).map((a) => a.originator_user_id),
     locations: producerLocationStmt.all(row.id) as ProducerLocationRow[],
+    elevators: producerElevatorStmt.all(row.id) as { id: string; name: string; address: string | null; street: string | null; city: string | null; state: string | null; zip: string | null }[],
   };
 }
 
@@ -439,15 +460,16 @@ app.get('/api/producers', (req, res) => {
 });
 
 app.post('/api/producers', (req, res) => {
-  const { id, name, business_name, lng, lat, address, commodities, originator_user_ids, locations } = req.body;
+  const { id, name, business_name, lng, lat, address, street, city, state, zip, commodities, originator_user_ids, locations, elevator_ids } = req.body;
   if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
   if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
   if (!isOptionalLng(lng) || !isOptionalLat(lat)) return res.status(400).json({ error: 'Invalid lng/lat' });
   if (commodities !== undefined && !isStringArray(commodities)) return res.status(400).json({ error: 'commodities must be a string array' });
   if (originator_user_ids !== undefined && !isStringArray(originator_user_ids)) return res.status(400).json({ error: 'originator_user_ids must be a string array' });
 
-  db.prepare('INSERT INTO producers (id, name, business_name, lng, lat, address) VALUES (?, ?, ?, ?, ?, ?)').run(
-    id, sanitize(name), business_name ? sanitize(business_name) : null, lng ?? null, lat ?? null, address ? sanitize(address) : null
+  db.prepare('INSERT INTO producers (id, name, business_name, lng, lat, address, street, city, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+    id, sanitize(name), business_name ? sanitize(business_name) : null, lng ?? null, lat ?? null, address ? sanitize(address) : null,
+    street ? sanitize(street) : null, city ? sanitize(city) : null, state ? sanitize(state) : null, zip ? sanitize(zip) : null
   );
 
   if (commodities) {
@@ -462,12 +484,22 @@ app.post('/api/producers', (req, res) => {
   }
 
   if (locations && Array.isArray(locations)) {
-    const stmt = db.prepare('INSERT INTO producer_locations (id, producer_id, name, address, lng, lat) VALUES (?, ?, ?, ?, ?, ?)');
+    const stmt = db.prepare('INSERT INTO producer_locations (id, producer_id, name, address, street, city, state, zip, lng, lat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     for (const loc of locations) {
       if (!isNonEmptyString(loc.name)) continue;
       if (!isOptionalLng(loc.lng) || !isOptionalLat(loc.lat)) continue;
-      stmt.run(loc.id ?? crypto.randomUUID(), id, sanitize(loc.name), loc.address ? sanitize(loc.address) : null, loc.lng ?? null, loc.lat ?? null);
+      stmt.run(
+        loc.id ?? crypto.randomUUID(), id, sanitize(loc.name), loc.address ? sanitize(loc.address) : null,
+        loc.street ? sanitize(loc.street) : null, loc.city ? sanitize(loc.city) : null,
+        loc.state ? sanitize(loc.state) : null, loc.zip ? sanitize(loc.zip) : null,
+        loc.lng ?? null, loc.lat ?? null
+      );
     }
+  }
+
+  if (elevator_ids && Array.isArray(elevator_ids)) {
+    const stmt = db.prepare('INSERT OR IGNORE INTO producer_elevators (producer_id, elevator_id) VALUES (?, ?)');
+    for (const eid of elevator_ids) stmt.run(id, eid);
   }
 
   const row = db.prepare('SELECT * FROM producers WHERE id = ?').get(id) as ProducerRow;
@@ -475,7 +507,7 @@ app.post('/api/producers', (req, res) => {
 });
 
 app.put('/api/producers/:id', (req, res) => {
-  const { name, business_name, lng, lat, address, commodities, originator_user_ids, locations } = req.body;
+  const { name, business_name, lng, lat, address, street, city, state, zip, commodities, originator_user_ids, locations, elevator_ids } = req.body;
   const updates: string[] = [];
   const params: (string | number | null)[] = [];
   if (name !== undefined) { updates.push('name = ?'); params.push(name); }
@@ -483,6 +515,10 @@ app.put('/api/producers/:id', (req, res) => {
   if (lng !== undefined) { updates.push('lng = ?'); params.push(lng); }
   if (lat !== undefined) { updates.push('lat = ?'); params.push(lat); }
   if (address !== undefined) { updates.push('address = ?'); params.push(address); }
+  if (street !== undefined) { updates.push('street = ?'); params.push(street); }
+  if (city !== undefined) { updates.push('city = ?'); params.push(city); }
+  if (state !== undefined) { updates.push('state = ?'); params.push(state); }
+  if (zip !== undefined) { updates.push('zip = ?'); params.push(zip); }
   if (updates.length) {
     params.push(req.params.id);
     db.prepare(`UPDATE producers SET ${updates.join(', ')} WHERE id = ?`).run(...params);
@@ -499,10 +535,19 @@ app.put('/api/producers/:id', (req, res) => {
   }
   if (locations && Array.isArray(locations)) {
     db.prepare('DELETE FROM producer_locations WHERE producer_id = ?').run(req.params.id);
-    const stmt = db.prepare('INSERT INTO producer_locations (id, producer_id, name, address, lng, lat) VALUES (?, ?, ?, ?, ?, ?)');
+    const stmt = db.prepare('INSERT INTO producer_locations (id, producer_id, name, address, street, city, state, zip, lng, lat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     for (const loc of locations) {
-      stmt.run(loc.id ?? crypto.randomUUID(), req.params.id, loc.name, loc.address ?? null, loc.lng ?? null, loc.lat ?? null);
+      stmt.run(
+        loc.id ?? crypto.randomUUID(), req.params.id, loc.name, loc.address ?? null,
+        loc.street ?? null, loc.city ?? null, loc.state ?? null, loc.zip ?? null,
+        loc.lng ?? null, loc.lat ?? null
+      );
     }
+  }
+  if (elevator_ids && Array.isArray(elevator_ids)) {
+    db.prepare('DELETE FROM producer_elevators WHERE producer_id = ?').run(req.params.id);
+    const stmt = db.prepare('INSERT OR IGNORE INTO producer_elevators (producer_id, elevator_id) VALUES (?, ?)');
+    for (const eid of elevator_ids) stmt.run(req.params.id, eid);
   }
   const row = db.prepare('SELECT * FROM producers WHERE id = ?').get(req.params.id) as ProducerRow;
   if (!row) return res.status(404).json({ error: 'Producer not found' });
@@ -524,6 +569,10 @@ interface CompetitorRow {
   lng: number | null;
   lat: number | null;
   address: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   created_at: string;
 }
 
@@ -542,14 +591,15 @@ app.get('/api/competitors', (_req, res) => {
 });
 
 app.post('/api/competitors', (req, res) => {
-  const { id, name, lng, lat, address, commodities } = req.body;
+  const { id, name, lng, lat, address, street, city, state, zip, commodities } = req.body;
   if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
   if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
   if (!isOptionalLng(lng) || !isOptionalLat(lat)) return res.status(400).json({ error: 'Invalid lng/lat' });
   if (commodities !== undefined && !isStringArray(commodities)) return res.status(400).json({ error: 'commodities must be a string array' });
 
-  db.prepare('INSERT INTO competitors (id, name, lng, lat, address) VALUES (?, ?, ?, ?, ?)').run(
-    id, sanitize(name), lng ?? null, lat ?? null, address ? sanitize(address) : null
+  db.prepare('INSERT INTO competitors (id, name, lng, lat, address, street, city, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+    id, sanitize(name), lng ?? null, lat ?? null, address ? sanitize(address) : null,
+    street ? sanitize(street) : null, city ? sanitize(city) : null, state ? sanitize(state) : null, zip ? sanitize(zip) : null
   );
 
   if (commodities) {
@@ -563,13 +613,17 @@ app.post('/api/competitors', (req, res) => {
 });
 
 app.put('/api/competitors/:id', (req, res) => {
-  const { name, lng, lat, address, commodities } = req.body;
+  const { name, lng, lat, address, street, city, state, zip, commodities } = req.body;
   const updates: string[] = [];
   const params: (string | number | null)[] = [];
   if (name !== undefined) { updates.push('name = ?'); params.push(name); }
   if (lng !== undefined) { updates.push('lng = ?'); params.push(lng); }
   if (lat !== undefined) { updates.push('lat = ?'); params.push(lat); }
   if (address !== undefined) { updates.push('address = ?'); params.push(address); }
+  if (street !== undefined) { updates.push('street = ?'); params.push(street); }
+  if (city !== undefined) { updates.push('city = ?'); params.push(city); }
+  if (state !== undefined) { updates.push('state = ?'); params.push(state); }
+  if (zip !== undefined) { updates.push('zip = ?'); params.push(zip); }
   if (updates.length) {
     params.push(req.params.id);
     db.prepare(`UPDATE competitors SET ${updates.join(', ')} WHERE id = ?`).run(...params);

@@ -45,6 +45,18 @@ if (!userColumns.some((c) => c.name === 'types')) {
   db.exec("ALTER TABLE users ADD COLUMN types TEXT NOT NULL DEFAULT '[]'");
 }
 
+// Migration: add structured address columns (street, city, state, zip) to all entity tables
+const addressMigrationTables = ['elevators', 'producers', 'producer_locations', 'competitors'];
+for (const table of addressMigrationTables) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === 'street')) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN street TEXT`);
+    db.exec(`ALTER TABLE ${table} ADD COLUMN city TEXT`);
+    db.exec(`ALTER TABLE ${table} ADD COLUMN state TEXT`);
+    db.exec(`ALTER TABLE ${table} ADD COLUMN zip TEXT`);
+  }
+}
+
 // ── Domain tables ──
 
 db.exec(`
@@ -55,6 +67,10 @@ db.exec(`
     lng REAL NOT NULL,
     lat REAL NOT NULL,
     address TEXT,
+    street TEXT,
+    city TEXT,
+    state TEXT,
+    zip TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
 
@@ -87,6 +103,10 @@ db.exec(`
     lng REAL,
     lat REAL,
     address TEXT,
+    street TEXT,
+    city TEXT,
+    state TEXT,
+    zip TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
 
@@ -95,6 +115,10 @@ db.exec(`
     producer_id TEXT NOT NULL REFERENCES producers(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     address TEXT,
+    street TEXT,
+    city TEXT,
+    state TEXT,
+    zip TEXT,
     lng REAL,
     lat REAL,
     created_at TEXT DEFAULT (datetime('now'))
@@ -113,8 +137,15 @@ db.exec(`
     PRIMARY KEY (producer_id, originator_user_id)
   );
 
+  CREATE TABLE IF NOT EXISTS producer_elevators (
+    producer_id TEXT NOT NULL REFERENCES producers(id) ON DELETE CASCADE,
+    elevator_id TEXT NOT NULL REFERENCES elevators(id) ON DELETE CASCADE,
+    PRIMARY KEY (producer_id, elevator_id)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_producer_locations_producer ON producer_locations(producer_id);
   CREATE INDEX IF NOT EXISTS idx_producer_assignments_originator ON producer_assignments(originator_user_id);
+  CREATE INDEX IF NOT EXISTS idx_producer_elevators_elevator ON producer_elevators(elevator_id);
 `);
 
 // ── Competitors (rival grain elevators) ──
@@ -126,6 +157,10 @@ db.exec(`
     lng REAL,
     lat REAL,
     address TEXT,
+    street TEXT,
+    city TEXT,
+    state TEXT,
+    zip TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
 

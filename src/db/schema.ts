@@ -53,6 +53,10 @@ export const elevators = pgTable(
     lng: doublePrecision('lng').notNull(),
     lat: doublePrecision('lat').notNull(),
     address: text('address'),
+    street: text('street'),
+    city: text('city'),
+    state: text('state'),
+    zip: text('zip'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (t) => [index('idx_elevators_merchant_user').on(t.merchantUserId)],
@@ -99,6 +103,10 @@ export const producers = pgTable('producers', {
   lng: doublePrecision('lng'),
   lat: doublePrecision('lat'),
   address: text('address'),
+  street: text('street'),
+  city: text('city'),
+  state: text('state'),
+  zip: text('zip'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
@@ -111,6 +119,10 @@ export const producerLocations = pgTable(
       .references(() => producers.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     address: text('address'),
+    street: text('street'),
+    city: text('city'),
+    state: text('state'),
+    zip: text('zip'),
     lng: doublePrecision('lng'),
     lat: doublePrecision('lat'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -146,6 +158,22 @@ export const producerAssignments = pgTable(
   ],
 );
 
+export const producerElevators = pgTable(
+  'producer_elevators',
+  {
+    producerId: text('producer_id')
+      .notNull()
+      .references(() => producers.id, { onDelete: 'cascade' }),
+    elevatorId: text('elevator_id')
+      .notNull()
+      .references(() => elevators.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.producerId, t.elevatorId] }),
+    index('idx_producer_elevators_elevator').on(t.elevatorId),
+  ],
+);
+
 // ── Competitors ─────────────────────────────────────────
 
 export const competitors = pgTable('competitors', {
@@ -154,6 +182,10 @@ export const competitors = pgTable('competitors', {
   lng: doublePrecision('lng'),
   lat: doublePrecision('lat'),
   address: text('address'),
+  street: text('street'),
+  city: text('city'),
+  state: text('state'),
+  zip: text('zip'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 

@@ -15,7 +15,7 @@ import { Trash2, Plus, Building2 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { toast } from 'sonner';
 import {
-  fetchCompetitors, createCompetitor, deleteCompetitor, type CompetitorRow,
+  fetchCompetitors, createCompetitor, deleteCompetitor, type CompetitorRow, formatAddress,
 } from '@/lib/api';
 
 export default function CompetitorsPage() {
@@ -31,7 +31,10 @@ export default function CompetitorsPage() {
 
   // Form fields
   const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
+  const [addrState, setAddrState] = useState('');
+  const [zip, setZip] = useState('');
   const [lng, setLng] = useState('');
   const [lat, setLat] = useState('');
   const [commodities, setCommodities] = useState('');
@@ -52,7 +55,10 @@ export default function CompetitorsPage() {
 
   const resetForm = () => {
     setName('');
-    setAddress('');
+    setStreet('');
+    setCity('');
+    setAddrState('');
+    setZip('');
     setLng('');
     setLat('');
     setCommodities('');
@@ -72,7 +78,10 @@ export default function CompetitorsPage() {
         name: name.trim(),
         lng: lng.trim() ? parseFloat(lng) : undefined,
         lat: lat.trim() ? parseFloat(lat) : undefined,
-        address: address.trim() || undefined,
+        street: street.trim() || undefined,
+        city: city.trim() || undefined,
+        state: addrState.trim() || undefined,
+        zip: zip.trim() || undefined,
         commodities: commodities.trim()
           ? commodities.split(',').map((c) => c.trim()).filter(Boolean)
           : undefined,
@@ -151,7 +160,7 @@ export default function CompetitorsPage() {
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.name}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {c.address ?? '—'}
+                      {formatAddress(c) || c.address || '—'}
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {c.lng != null && c.lat != null
@@ -200,8 +209,22 @@ export default function CompetitorsPage() {
                 <Input id="c-name" placeholder="e.g. Rival Grain Co" value={name} onChange={(e) => setName(e.target.value)} />
               </Field>
               <Field>
-                <FieldLabel htmlFor="c-addr">Address</FieldLabel>
-                <Input id="c-addr" placeholder="e.g. 789 Market St" value={address} onChange={(e) => setAddress(e.target.value)} />
+                <FieldLabel htmlFor="c-street">Street Address</FieldLabel>
+                <Input id="c-street" placeholder="e.g. 789 Market St" value={street} onChange={(e) => setStreet(e.target.value)} />
+              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="c-city">City</FieldLabel>
+                  <Input id="c-city" placeholder="e.g. Burlington" value={city} onChange={(e) => setCity(e.target.value)} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="c-state">State</FieldLabel>
+                  <Input id="c-state" placeholder="e.g. IA" value={addrState} onChange={(e) => setAddrState(e.target.value)} />
+                </Field>
+              </div>
+              <Field>
+                <FieldLabel htmlFor="c-zip">Zip Code</FieldLabel>
+                <Input id="c-zip" placeholder="e.g. 52601" value={zip} onChange={(e) => setZip(e.target.value)} />
               </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field>

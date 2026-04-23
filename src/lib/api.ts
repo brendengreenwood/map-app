@@ -122,6 +122,26 @@ export async function deleteUserApi(id: string): Promise<{ deleted: number }> {
   return apiFetch(`${API_URL}/api/users/${id}`, { method: 'DELETE' });
 }
 
+// ── Address helpers ──
+
+export interface AddressFields {
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+}
+
+/** Build a display string like "123 Main St, Des Moines, IA 50309" from structured fields. */
+export function formatAddress(addr: Partial<AddressFields> | null | undefined): string {
+  if (!addr) return '';
+  const parts: string[] = [];
+  if (addr.street) parts.push(addr.street);
+  const cityStateZip = [addr.city, addr.state].filter(Boolean).join(', ')
+    + (addr.zip ? ` ${addr.zip}` : '');
+  if (cityStateZip.trim()) parts.push(cityStateZip.trim());
+  return parts.join(', ');
+}
+
 // ── Elevators ──
 
 export interface ElevatorRow {
@@ -131,6 +151,10 @@ export interface ElevatorRow {
   lng: number;
   lat: number;
   address: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   commodities: string[];
   created_at: string;
 }
@@ -142,7 +166,9 @@ export async function fetchElevators(merchantUserId?: string): Promise<{ elevato
 
 export async function createElevator(elevator: {
   id: string; merchant_user_id?: string; name: string;
-  lng: number; lat: number; address?: string; commodities?: string[];
+  lng: number; lat: number; address?: string;
+  street?: string; city?: string; state?: string; zip?: string;
+  commodities?: string[];
 }): Promise<ElevatorRow> {
   return apiFetch(`${API_URL}/api/elevators`, {
     method: 'POST',
@@ -153,6 +179,7 @@ export async function createElevator(elevator: {
 
 export async function updateElevator(id: string, data: {
   name?: string; lng?: number; lat?: number; address?: string;
+  street?: string; city?: string; state?: string; zip?: string;
   commodities?: string[]; merchant_user_id?: string | null;
 }): Promise<ElevatorRow> {
   return apiFetch(`${API_URL}/api/elevators/${id}`, {
@@ -206,9 +233,23 @@ export interface ProducerLocation {
   producer_id: string;
   name: string;
   address: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   lng: number | null;
   lat: number | null;
   created_at: string;
+}
+
+export interface ProducerElevator {
+  id: string;
+  name: string;
+  address: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
 }
 
 export interface ProducerRow {
@@ -218,9 +259,14 @@ export interface ProducerRow {
   lng: number | null;
   lat: number | null;
   address: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   commodities: string[];
   originator_user_ids: string[];
   locations: ProducerLocation[];
+  elevators: ProducerElevator[];
   created_at: string;
 }
 
@@ -235,9 +281,14 @@ export async function createProducer(producer: {
   lng?: number;
   lat?: number;
   address?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
   commodities?: string[];
   originator_user_ids?: string[];
-  locations?: { id?: string; name: string; address?: string; lng?: number; lat?: number }[];
+  locations?: { id?: string; name: string; address?: string; street?: string; city?: string; state?: string; zip?: string; lng?: number; lat?: number }[];
+  elevator_ids?: string[];
 }): Promise<ProducerRow> {
   return apiFetch(`${API_URL}/api/producers`, {
     method: 'POST',
@@ -252,9 +303,14 @@ export async function updateProducer(id: string, data: {
   lng?: number;
   lat?: number;
   address?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
   commodities?: string[];
   originator_user_ids?: string[];
-  locations?: { id?: string; name: string; address?: string; lng?: number; lat?: number }[];
+  locations?: { id?: string; name: string; address?: string; street?: string; city?: string; state?: string; zip?: string; lng?: number; lat?: number }[];
+  elevator_ids?: string[];
 }): Promise<ProducerRow> {
   return apiFetch(`${API_URL}/api/producers/${id}`, {
     method: 'PUT',
@@ -275,6 +331,10 @@ export interface CompetitorRow {
   lng: number | null;
   lat: number | null;
   address: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   commodities: string[];
   created_at: string;
 }
@@ -285,7 +345,8 @@ export async function fetchCompetitors(): Promise<{ competitors: CompetitorRow[]
 
 export async function createCompetitor(competitor: {
   id: string; name: string; lng?: number | null; lat?: number | null;
-  address?: string; commodities?: string[];
+  address?: string; street?: string; city?: string; state?: string; zip?: string;
+  commodities?: string[];
 }): Promise<CompetitorRow> {
   return apiFetch(`${API_URL}/api/competitors`, {
     method: 'POST',
@@ -296,6 +357,7 @@ export async function createCompetitor(competitor: {
 
 export async function updateCompetitor(id: string, data: {
   name?: string; lng?: number; lat?: number; address?: string;
+  street?: string; city?: string; state?: string; zip?: string;
   commodities?: string[];
 }): Promise<CompetitorRow> {
   return apiFetch(`${API_URL}/api/competitors/${id}`, {
