@@ -120,14 +120,6 @@ export default function MapPage() {
     setActiveTabId(newWindow.id);
   }, []);
 
-  const removeTosWindow = useCallback(
-    (id: string) => {
-      setTosWindows((prev) => prev.filter((w) => w.id !== id));
-      if (activeTabId === id) setActiveTabId(CONTRACT_TAB);
-    },
-    [activeTabId],
-  );
-
   const updateTosWindow = useCallback(
     (id: string, updates: Partial<TosWindow>) => {
       setTosWindows((prev) =>
@@ -144,12 +136,10 @@ export default function MapPage() {
       label: scenario
         ? `${scenario.contract_label} (ZC ${scenario.contract_code})`
         : 'Contract',
-      closable: false,
     };
     const windowTabs: MapTab[] = tosWindows.map((w) => ({
       id: w.id,
       label: w.label,
-      closable: true,
     }));
     return [contractTab, ...windowTabs];
   }, [scenario, tosWindows]);
@@ -226,7 +216,6 @@ export default function MapPage() {
           tabs={tabs}
           activeTabId={activeTabId}
           onTabChange={setActiveTabId}
-          onTabClose={removeTosWindow}
           leadingAction={
             <Button variant="ghost" size="icon-sm" onClick={closeBidMode}>
               <ArrowLeft />

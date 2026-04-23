@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus, Map, Layers, Route, Compass } from 'lucide-react';
 
 const SAMPLE_TABS: MapTab[] = [
-  { id: 'main', label: 'Main Map', icon: Map, closable: false },
+  { id: 'main', label: 'Main Map', icon: Map },
   { id: 'heatmap', label: 'Heatmap View', icon: Layers },
   { id: 'route-1', label: 'Route Planning', icon: Route },
 ];
@@ -62,9 +62,9 @@ export const WithActions: Story = {
 };
 
 export const SingleTab: Story = {
-  name: 'Single Tab (no close)',
+  name: 'Single Tab',
   args: {
-    tabs: [{ id: 'main', label: 'Main Map', icon: Map, closable: false }],
+    tabs: [{ id: 'main', label: 'Main Map', icon: Map }],
     activeTabId: 'main',
   },
 };
@@ -73,7 +73,7 @@ export const ManyTabs: Story = {
   name: 'Many Tabs (overflow)',
   args: {
     tabs: [
-      { id: 'main', label: 'Main Map', icon: Map, closable: false },
+      { id: 'main', label: 'Main Map', icon: Map },
       { id: 'heat', label: 'Heatmap View', icon: Layers },
       { id: 'route-1', label: 'Route A → B', icon: Route },
       { id: 'route-2', label: 'Route C → D', icon: Route },
@@ -96,20 +96,15 @@ export const ManyTabs: Story = {
 };
 
 export const Interactive: Story = {
-  name: 'Interactive (click tabs, close)',
+  name: 'Interactive (click tabs)',
   render: function InteractiveStory() {
     const [tabs, setTabs] = useState<MapTab[]>([
-      { id: 'main', label: 'Main Map', icon: Map, closable: false },
+      { id: 'main', label: 'Main Map', icon: Map },
       { id: 'heatmap', label: 'Heatmap View', icon: Layers },
       { id: 'route', label: 'Route Planning', icon: Route },
     ]);
     const [activeId, setActiveId] = useState('main');
     let counter = tabs.length;
-
-    const handleClose = (id: string) => {
-      setTabs((prev) => prev.filter((t) => t.id !== id));
-      if (activeId === id) setActiveId('main');
-    };
 
     const handleAdd = () => {
       counter += 1;
@@ -123,7 +118,6 @@ export const Interactive: Story = {
         tabs={tabs}
         activeTabId={activeId}
         onTabChange={setActiveId}
-        onTabClose={handleClose}
         leadingAction={
           <Button variant="ghost" size="icon-sm" onClick={() => alert('Back!')}>
             <ArrowLeft />

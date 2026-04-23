@@ -1,5 +1,4 @@
 import { type ReactNode, type ComponentType, type SVGProps } from 'react';
-import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -10,7 +9,7 @@ export interface MapTab {
   id: string;
   label: string;
   icon?: ComponentType<SVGProps<SVGSVGElement>>;
-  closable?: boolean;
+
 }
 
 /* ------------------------------------------------------------------ */
@@ -21,7 +20,6 @@ interface MapTabBarProps {
   tabs: MapTab[];
   activeTabId: string;
   onTabChange: (id: string) => void;
-  onTabClose?: (id: string) => void;
 
   /** Element rendered at the far-left of the bar (e.g. back button). */
   leadingAction?: ReactNode;
@@ -37,7 +35,6 @@ export function MapTabBar({
   tabs,
   activeTabId,
   onTabChange,
-  onTabClose,
   leadingAction,
   title,
   inlineAction,
@@ -60,7 +57,7 @@ export function MapTabBar({
       )}
 
       {/* Tab strip */}
-      <div className="flex min-w-0 flex-1 items-end gap-0 overflow-x-auto pl-1">
+      <div className="flex min-w-0 flex-1 items-end gap-1 overflow-x-auto pl-1">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           const Icon = tab.icon;
@@ -79,25 +76,6 @@ export function MapTabBar({
             >
               {Icon && <Icon className="size-3.5 shrink-0" />}
               <span className="truncate">{tab.label}</span>
-              {tab.closable !== false && (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTabClose?.(tab.id);
-                  }}
-                  className={cn(
-                    'ml-0.5 flex size-4 items-center justify-center rounded-sm transition-colors',
-                    'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    isActive
-                      ? 'opacity-100'
-                      : 'opacity-0 group-hover:opacity-100',
-                  )}
-                >
-                  <X className="size-3" />
-                </span>
-              )}
             </button>
           );
         })}
