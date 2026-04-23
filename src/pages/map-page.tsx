@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Calendar, Plus, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus } from 'lucide-react';
 import { useMap } from '@/hooks/use-map';
 import { useUsers } from '@/hooks/use-users';
 import { MapBottomTabs } from '@/components/map-bottom-tabs';
@@ -101,6 +101,13 @@ export default function MapPage() {
       (isReviseMode ? bidState.initialWindowCode : undefined) ?? CONTRACT_TAB,
   );
 
+  // Publish button state (controlled by BidMapEditor)
+  const [publishState, setPublishState] = useState<{
+    save: () => void;
+    disabled: boolean;
+    saving: boolean;
+  }>({ save: () => {}, disabled: true, saving: false });
+
   const addTosWindow = useCallback(() => {
     tosCounter += 1;
     const newWindow: TosWindow = {
@@ -137,13 +144,11 @@ export default function MapPage() {
       label: scenario
         ? `${scenario.contract_label} (ZC ${scenario.contract_code})`
         : 'Contract',
-      icon: TrendingUp,
       closable: false,
     };
     const windowTabs: MapTab[] = tosWindows.map((w) => ({
       id: w.id,
       label: w.label,
-      icon: Calendar,
       closable: true,
     }));
     return [contractTab, ...windowTabs];
@@ -227,7 +232,7 @@ export default function MapPage() {
               <ArrowLeft />
             </Button>
           }
-          trailingAction={
+          inlineAction={
             <Button
               variant="ghost"
               size="icon-sm"
@@ -235,6 +240,17 @@ export default function MapPage() {
               title="Add Time of Shipment"
             >
               <Plus className="size-4" />
+            </Button>
+          }
+          trailingAction={
+            <Button
+              size="sm"
+              className="mx-1"
+              onClick={publishState.save}
+              disabled={publishState.disabled}
+            >
+              {publishState.saving && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
+              Publish
             </Button>
           }
         />
@@ -276,6 +292,7 @@ export default function MapPage() {
               onCancel={closeBidMode}
               onCompetitorBids={handleCompetitorBids}
               onUpdateTosWindow={updateTosWindow}
+              onPublishStateChange={setPublishState}
             />
           </div>
         )}

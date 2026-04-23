@@ -48,6 +48,8 @@ interface BidMapEditorProps {
   onCompetitorBids?: (bids: CompetitorBidRow[]) => void;
   /** Called to update a TOS window's data */
   onUpdateTosWindow?: (id: string, updates: Partial<TosWindow>) => void;
+  /** Exposes save handler + disabled state to parent for external publish button */
+  onPublishStateChange?: (state: { save: () => void; disabled: boolean; saving: boolean }) => void;
 }
 
 function getWindowPricing(scenario: ScenarioRow, window: ScenarioWindowRow) {
@@ -73,6 +75,7 @@ export function BidMapEditor({
   onCancel,
   onCompetitorBids,
   onUpdateTosWindow,
+  onPublishStateChange,
 }: BidMapEditorProps) {
   const { activeUser } = useUsers();
   const isCreateMode = mode === 'create';
@@ -275,6 +278,16 @@ export function BidMapEditor({
   };
 
   const conflictElevator = elevators?.find((e) => e.id === selectedElevatorId);
+
+  // Expose save state to parent for external publish button
+  const publishDisabled = saving || (isCreateMode && (!selectedElevatorId || !selectedContractCode));
+  useEffect(() => {
+    onPublishStateChange?.({
+      save: () => handleSave(),
+      disabled: publishDisabled,
+      saving,
+    });
+  }, [publishDisabled, saving, onPublishStateChange, selectedElevatorId, selectedContractCode]);
 
   // ── Render ──
 
@@ -803,19 +816,10 @@ export function BidMapEditor({
         </div>
       </ScrollArea>
 
-      {/* Footer actions */}
-      <div className="flex shrink-0 gap-2 border-t border-border p-4">
-        <Button variant="outline" size="sm" className="flex-1" onClick={onCancel}>
+      {/* Footer — cancel only; publish lives in the tab bar */}
+      <div className="flex shrink-0 border-t border-border p-3">
+        <Button variant="outline" size="sm" className="w-full" onClick={onCancel}>
           Cancel
-        </Button>
-        <Button
-          size="sm"
-          className="flex-1"
-          onClick={() => handleSave()}
-          disabled={saving || (isCreateMode && (!selectedElevatorId || !selectedContractCode))}
-        >
-          {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-          {isCreateMode ? 'Create Scenario' : 'Save & Publish'}
         </Button>
       </div>
 

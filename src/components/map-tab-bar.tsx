@@ -27,7 +27,9 @@ interface MapTabBarProps {
   leadingAction?: ReactNode;
   /** Title block between leading action and tabs (e.g. contract name). */
   title?: ReactNode;
-  /** Element rendered at the far-right of the bar (e.g. "+" button). */
+  /** Element rendered inline after the last tab (e.g. "+" add button). */
+  inlineAction?: ReactNode;
+  /** Element rendered at the far-right of the bar (e.g. publish button). */
   trailingAction?: ReactNode;
 }
 
@@ -38,6 +40,7 @@ export function MapTabBar({
   onTabClose,
   leadingAction,
   title,
+  inlineAction,
   trailingAction,
 }: MapTabBarProps) {
   return (
@@ -98,6 +101,13 @@ export function MapTabBar({
             </button>
           );
         })}
+
+        {/* Inline action (e.g. + button, right after last tab) */}
+        {inlineAction && (
+          <div className="flex shrink-0 items-center px-1 self-center">
+            {inlineAction}
+          </div>
+        )}
       </div>
 
       {/* Trailing action slot */}
