@@ -16,7 +16,6 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
 import { UserSwitcher } from '@/components/user-switcher';
 import { useUsers } from '@/hooks/use-users';
 import type { Theme } from '@/hooks/use-users';
@@ -122,7 +121,6 @@ export function AppShell() {
         {/* Top bar — only shows trigger + breadcrumb on desktop */}
         <header className="flex h-10 shrink-0 items-center gap-2 border-b px-3 md:h-12 animate-in slide-in-from-top duration-300">
           <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 !h-4" />
           <span className="text-sm font-medium text-muted-foreground">Map App</span>
         </header>
 
