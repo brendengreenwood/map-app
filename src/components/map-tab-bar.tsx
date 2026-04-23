@@ -44,7 +44,7 @@ export function MapTabBar({
   trailingAction,
 }: MapTabBarProps) {
   return (
-    <div className="flex h-10 items-center gap-0 border-b border-border bg-card">
+    <div className="flex h-10 items-stretch gap-0 border-b border-border bg-card">
       {/* Leading action slot */}
       {leadingAction && (
         <div className="flex shrink-0 items-center border-r border-border px-1">
@@ -59,8 +59,8 @@ export function MapTabBar({
         </div>
       )}
 
-      {/* Tab strip */}
-      <div className="flex min-w-0 flex-1 items-end gap-0 overflow-x-auto px-1 pt-1">
+      {/* Tab strip — items-end so tabs sit flush on the bottom border */}
+      <div className="flex min-w-0 flex-1 items-end gap-0 overflow-x-auto px-1">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           const Icon = tab.icon;
@@ -78,7 +78,7 @@ export function MapTabBar({
               )}
             >
               {Icon && <Icon className="size-3.5 shrink-0" />}
-              <span className="truncate max-w-[120px]">{tab.label}</span>
+              <span className="truncate">{tab.label}</span>
               {tab.closable !== false && (
                 <span
                   role="button"
