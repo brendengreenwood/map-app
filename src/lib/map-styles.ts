@@ -44,7 +44,7 @@ const DARK_OVERRIDES: LayerOverride[] = [
   { id: 'water', overrides: [{ property: 'fill-color', value: SPROUT.waterDark }] },
   { id: 'landcover', overrides: [{ property: 'fill-color', value: SPROUT.neutral900 }] },
   { id: 'landuse', overrides: [{ property: 'fill-color', value: SPROUT.neutral900 }] },
-  { id: 'landuse_residential', overrides: [{ property: 'fill-color', value: '#232723' }] },
+  { id: 'landuse_residential', overrides: [{ property: 'fill-color', value: '#1e211f' }, { property: 'fill-opacity', value: 1 }] },
   { id: 'park_national_park', overrides: [{ property: 'fill-color', value: '#2a3328' }] },
   { id: 'park_nature_reserve', overrides: [{ property: 'fill-color', value: '#2a3328' }] },
   { id: 'building', overrides: [{ property: 'fill-color', value: '#1a1d1b' }] },
