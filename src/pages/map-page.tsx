@@ -139,7 +139,7 @@ export default function MapPage() {
             <Button
               variant="outline"
               size="icon"
-              className="absolute top-3 left-3 z-30 size-9 rounded-full bg-card shadow-md animate-in fade-in slide-in-from-left-2 duration-200"
+              className="absolute top-3 left-3 z-30 size-9 rounded-full !bg-card shadow-md animate-in fade-in slide-in-from-left-2 duration-200"
               onClick={() => navigate('/')}
             >
               <ArrowLeft />
