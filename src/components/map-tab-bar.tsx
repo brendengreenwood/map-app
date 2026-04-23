@@ -59,8 +59,8 @@ export function MapTabBar({
         </div>
       )}
 
-      {/* Tab strip — items-end so tabs sit flush on the bottom border */}
-      <div className="flex min-w-0 flex-1 items-end gap-0 overflow-x-auto px-1">
+      {/* Tab strip */}
+      <div className="flex min-w-0 flex-1 items-stretch gap-0 overflow-x-auto pl-1">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           const Icon = tab.icon;
@@ -70,7 +70,7 @@ export function MapTabBar({
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                'group relative flex shrink-0 items-center gap-1.5 rounded-t-md border border-b-0 px-3 py-1.5 text-xs font-medium transition-colors',
+                'group relative flex shrink-0 items-center gap-1.5 rounded-t-md border border-b-0 px-3 mt-px text-xs font-medium transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isActive
                   ? 'z-10 border-border bg-background text-foreground -mb-px'
