@@ -2,6 +2,13 @@
   "mcpServers": {
     "map-app-storybook": {
       "url": "http://localhost:6006/mcp"
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
     }
   }
 }
