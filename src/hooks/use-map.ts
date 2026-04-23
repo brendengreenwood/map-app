@@ -112,6 +112,7 @@ function addLayers(map: maplibregl.Map, heatmapVisible: boolean) {
 export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, theme: ResolvedTheme = 'light', onReady?: () => void) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const competitorMarkersRef = useRef<maplibregl.Marker[]>([]);
   const clustersEnabled = useRef(true);
   const heatmapEnabled = useRef(false);
   const totalRef = useRef(0);
@@ -208,6 +209,8 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
       clearTimeout(debounceTimer.current);
       for (const m of markersRef.current) m.remove();
       markersRef.current = [];
+      for (const m of competitorMarkersRef.current) m.remove();
+      competitorMarkersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
@@ -295,6 +298,47 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
     markersRef.current.push(marker);
   }, []);
 
+  /** Render competitor bid markers. Replaces previous set each call. */
+  const setCompetitorMarkers = useCallback(
+    (bids: { lng: number; lat: number; name: string; posted: number }[]) => {
+      const map = mapRef.current;
+      // Clear old
+      for (const m of competitorMarkersRef.current) m.remove();
+      competitorMarkersRef.current = [];
+      if (!map) return;
+
+      for (const bid of bids) {
+        // Marker element
+        const el = document.createElement('div');
+        el.className = 'competitor-marker';
+        el.style.cssText =
+          'width:28px;height:28px;border-radius:50%;background:#d94040;border:2px solid #fff;' +
+          'display:flex;align-items:center;justify-content:center;cursor:pointer;' +
+          'font-size:10px;font-weight:600;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);';
+        el.textContent = `${bid.posted}`;
+
+        const popup = new maplibregl.Popup({ offset: 20, maxWidth: '200px' }).setHTML(
+          `<div style="font-size:12px"><b>${bid.name}</b><br/>Posted: ${bid.posted}¢</div>`,
+        );
+
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([bid.lng, bid.lat])
+          .setPopup(popup)
+          .addTo(map);
+
+        competitorMarkersRef.current.push(marker);
+      }
+
+      // If there are bids, fit bounds to include them all
+      if (bids.length > 0) {
+        const bounds = new maplibregl.LngLatBounds();
+        for (const bid of bids) bounds.extend([bid.lng, bid.lat]);
+        map.fitBounds(bounds, { padding: 120, maxZoom: 10 });
+      }
+    },
+    [],
+  );
+
   return {
     map: mapRef,
     onDataLoaded,
@@ -302,5 +346,6 @@ export function useMap(containerRef: React.RefObject<HTMLDivElement | null>, the
     toggleHeatmap,
     flyTo,
     addMarker,
+    setCompetitorMarkers,
   };
 }

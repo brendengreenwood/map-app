@@ -7,26 +7,16 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
-import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { PageHeader } from '@/components/page-header';
 import { BidContractRow } from '@/components/bid-contract-row';
 import { useUsers } from '@/hooks/use-users';
 import {
-  fetchElevators, fetchScenarios, createScenario, deleteScenario,
-  checkScenarioExists,
+  fetchElevators, fetchScenarios, deleteScenario,
   type ElevatorRow, type ScenarioRow,
 } from '@/lib/api';
-import { CORN_CONTRACTS } from '@/lib/bid-data';
 import {
   TrendingUp, ChevronsUpDown, ChevronsDownUp, Plus, MapPin, Loader2,
 } from 'lucide-react';
@@ -103,21 +93,6 @@ export default function BidManagementPage() {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [activeElevatorId, setActiveElevatorId] = useState<string>('');
 
-  // New scenario dialog
-  const [showNewDialog, setShowNewDialog] = useState(false);
-  const [newElevatorId, setNewElevatorId] = useState('');
-  const [newContractCode, setNewContractCode] = useState('');
-  const [newPosted, setNewPosted] = useState('-25');
-  const [newMax, setNewMax] = useState('-15');
-  const [newLeeway, setNewLeeway] = useState('3');
-  const [newIncrement, setNewIncrement] = useState('1');
-  const [newFreight, setNewFreight] = useState('12');
-  const [creating, setCreating] = useState(false);
-
-  // Conflict dialog
-  const [conflictScenario, setConflictScenario] = useState<ScenarioRow | null>(null);
-  const [pendingCreate, setPendingCreate] = useState<Parameters<typeof createScenario>[0] | null>(null);
-
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<ScenarioRow | null>(null);
 
@@ -171,9 +146,7 @@ export default function BidManagementPage() {
   const reviseScenario = useCallback(
     (scenario: ScenarioRow) => {
       navigate('/map', {
-        state: {
-          contract: { code: scenario.contract_code, label: scenario.contract_label },
-        },
+        state: { mode: 'revise', scenario },
       });
     },
     [navigate],
@@ -182,93 +155,16 @@ export default function BidManagementPage() {
   const reviseWindow = useCallback(
     (scenario: ScenarioRow, windowCode: string) => {
       navigate('/map', {
-        state: {
-          contract: { code: scenario.contract_code, label: scenario.contract_label },
-          initialWindowCode: windowCode,
-        },
+        state: { mode: 'revise', scenario, initialWindowCode: windowCode },
       });
     },
     [navigate],
   );
 
-  // ── New scenario creation flow ──
-
-  const openNewDialog = () => {
-    setNewElevatorId(activeElevatorId || (elevators[0]?.id ?? ''));
-    setNewContractCode('');
-    setNewPosted('-25');
-    setNewMax('-15');
-    setNewLeeway('3');
-    setNewIncrement('1');
-    setNewFreight('12');
-    setShowNewDialog(true);
-  };
-
-  const handleCreateScenario = async (replace = false) => {
-    if (!newContractCode || !newElevatorId) return;
-
-    const contract = CORN_CONTRACTS.find((c) => c.code === newContractCode);
-    if (!contract) return;
-
-    const payload = {
-      id: crypto.randomUUID(),
-      merchant_user_id: activeUser.id,
-      elevator_id: newElevatorId,
-      contract_code: contract.code,
-      contract_label: contract.label,
-      posted: parseInt(newPosted) || 0,
-      max: parseInt(newMax) || 0,
-      leeway: parseInt(newLeeway) || 0,
-      increment: parseInt(newIncrement) || 0,
-      freight: parseInt(newFreight) || 0,
-      updated_by: activeUser.name,
-      replace,
-    };
-
-    if (!replace) {
-      // Check for existing scenario first
-      setCreating(true);
-      try {
-        const check = await checkScenarioExists(activeUser.id, newElevatorId, contract.code);
-        if (check.exists) {
-          setConflictScenario(check.scenario);
-          setPendingCreate(payload);
-          setCreating(false);
-          return;
-        }
-      } catch {
-        // If check fails, proceed anyway
-      }
-    }
-
-    setCreating(true);
-    try {
-      await createScenario(payload);
-      setShowNewDialog(false);
-      setConflictScenario(null);
-      setPendingCreate(null);
-      await loadData();
-    } catch (err) {
-      console.error('Failed to create scenario:', err);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleConfirmReplace = async () => {
-    if (!pendingCreate) return;
-    setCreating(true);
-    try {
-      await createScenario({ ...pendingCreate, replace: true });
-      setShowNewDialog(false);
-      setConflictScenario(null);
-      setPendingCreate(null);
-      await loadData();
-    } catch (err) {
-      console.error('Failed to replace scenario:', err);
-    } finally {
-      setCreating(false);
-    }
+  const openNewScenario = () => {
+    navigate('/map', {
+      state: { mode: 'create', elevators },
+    });
   };
 
   const handleDeleteScenario = async () => {
@@ -321,8 +217,6 @@ export default function BidManagementPage() {
     );
   }
 
-  const elevatorForConflict = elevators.find((e) => e.id === newElevatorId);
-
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
@@ -339,7 +233,7 @@ export default function BidManagementPage() {
             <ChevronsDownUp data-icon="inline-start" />
             Collapse All
           </Button>
-          <Button size="sm" onClick={openNewDialog}>
+          <Button size="sm" onClick={openNewScenario}>
             <Plus data-icon="inline-start" />
             New Scenario
           </Button>
@@ -375,98 +269,6 @@ export default function BidManagementPage() {
           ))}
         </Card>
       </Tabs>
-
-      {/* ── New Scenario Dialog ── */}
-      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Scenario</DialogTitle>
-            <DialogDescription>
-              Create a new pricing scenario for a contract month.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Elevator</Label>
-              <Select value={newElevatorId} onValueChange={setNewElevatorId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {elevators.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Contract Month</Label>
-              <Select value={newContractCode} onValueChange={setNewContractCode}>
-                <SelectTrigger><SelectValue placeholder="Select contract..." /></SelectTrigger>
-                <SelectContent>
-                  {CORN_CONTRACTS.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      {c.label} ({c.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>Posted Basis (¢)</Label>
-                <Input type="number" value={newPosted} onChange={(e) => setNewPosted(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Max Bid (¢)</Label>
-                <Input type="number" value={newMax} onChange={(e) => setNewMax(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="grid gap-2">
-                <Label>Leeway (¢)</Label>
-                <Input type="number" value={newLeeway} onChange={(e) => setNewLeeway(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Increment (¢)</Label>
-                <Input type="number" value={newIncrement} onChange={(e) => setNewIncrement(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Freight (¢/bu)</Label>
-                <Input type="number" value={newFreight} onChange={(e) => setNewFreight(e.target.value)} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewDialog(false)}>Cancel</Button>
-            <Button
-              onClick={() => handleCreateScenario()}
-              disabled={creating || !newContractCode || !newElevatorId}
-            >
-              {creating && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Create Scenario
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Conflict Confirmation Dialog ── */}
-      <AlertDialog open={!!conflictScenario} onOpenChange={(open) => { if (!open) { setConflictScenario(null); setPendingCreate(null); } }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Scenario already exists</AlertDialogTitle>
-            <AlertDialogDescription>
-              A scenario for <strong>{conflictScenario?.contract_label} ({conflictScenario?.contract_code})</strong> at{' '}
-              <strong>{elevatorForConflict?.name}</strong> already exists. Do you want to replace it with the new scenario?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmReplace} disabled={creating}>
-              {creating && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Replace
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* ── Delete Confirmation Dialog ── */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>

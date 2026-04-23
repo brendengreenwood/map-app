@@ -644,6 +644,44 @@ app.delete('/api/competitors/:id', (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
+// ── COMPETITOR BIDS (daily snapshots) ──
+// ═══════════════════════════════════════════════════════════════════
+
+interface CompetitorBidRow {
+  id: string;
+  competitor_id: string;
+  contract_code: string;
+  bid_date: string;
+  posted: number;
+  created_at: string;
+}
+
+interface EnrichedCompetitorBid extends CompetitorBidRow {
+  competitor_name: string;
+  competitor_lng: number | null;
+  competitor_lat: number | null;
+}
+
+app.get('/api/competitor-bids', (req, res) => {
+  const { contract_code, date } = req.query;
+  if (!contract_code || typeof contract_code !== 'string') {
+    return res.status(400).json({ error: 'contract_code is required' });
+  }
+
+  const bidDate = typeof date === 'string' ? date : new Date().toISOString().slice(0, 10);
+
+  const rows = db.prepare(`
+    SELECT cb.*, c.name AS competitor_name, c.lng AS competitor_lng, c.lat AS competitor_lat
+    FROM competitor_bids cb
+    JOIN competitors c ON c.id = cb.competitor_id
+    WHERE cb.contract_code = ? AND cb.bid_date = ?
+    ORDER BY cb.posted DESC
+  `).all(contract_code, bidDate) as EnrichedCompetitorBid[];
+
+  res.json(rows);
+});
+
+// ═══════════════════════════════════════════════════════════════════
 // ── SCENARIOS (merchant bid pricing models) ──
 // ═══════════════════════════════════════════════════════════════════
 

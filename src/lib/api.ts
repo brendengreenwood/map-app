@@ -371,6 +371,29 @@ export async function deleteCompetitor(id: string): Promise<{ deleted: number }>
   return apiFetch(`${API_URL}/api/competitors/${id}`, { method: 'DELETE' });
 }
 
+// ── Competitor Bids (daily snapshots) ──
+
+export interface CompetitorBidRow {
+  id: string;
+  competitor_id: string;
+  contract_code: string;
+  bid_date: string;
+  posted: number;
+  created_at: string;
+  competitor_name: string;
+  competitor_lng: number | null;
+  competitor_lat: number | null;
+}
+
+export async function fetchCompetitorBids(
+  contractCode: string,
+  date?: string,
+): Promise<CompetitorBidRow[]> {
+  const params = new URLSearchParams({ contract_code: contractCode });
+  if (date) params.set('date', date);
+  return apiFetch(`${API_URL}/api/competitor-bids?${params}`);
+}
+
 // ── Scenarios (merchant bid pricing models) ──
 
 export interface ScenarioWindowRow {

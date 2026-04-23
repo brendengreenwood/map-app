@@ -1,26 +1,47 @@
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Calendar, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, TrendingUp } from 'lucide-react';
 import { useMap } from '@/hooks/use-map';
 import { useUsers } from '@/hooks/use-users';
 import { MapBottomTabs } from '@/components/map-bottom-tabs';
 import { MapTabBar, type MapTab } from '@/components/map-tab-bar';
 import { BidMapEditor } from '@/components/bid-map-editor';
 import { Button } from '@/components/ui/button';
-import {
-  type CornContract,
-  type DeliveryWindow,
-  DELIVERY_WINDOWS,
-} from '@/lib/bid-data';
+import type { ScenarioRow, ElevatorRow, CompetitorBidRow } from '@/lib/api';
 
-// State passed via navigate('/map', { state: ... })
-interface BidEditState {
-  contract: CornContract;
-  initialWindowCode?: string; // which tab to land on (contract code = parent)
+// ── State passed via navigate('/map', { state: ... }) ──
+
+interface BidCreateState {
+  mode: 'create';
+  elevators: ElevatorRow[];
 }
 
+interface BidReviseState {
+  mode: 'revise';
+  scenario: ScenarioRow;
+  initialWindowCode?: string;
+}
+
+export type BidEditState = BidCreateState | BidReviseState;
+
 // Sentinel tab ID for the parent contract scenario
-const CONTRACT_TAB_PREFIX = '__contract__';
+const CONTRACT_TAB = '__contract__';
+
+/** A TOS window being built (create mode) or already existing (revise mode) */
+export interface TosWindow {
+  id: string;
+  label: string;
+  startDate: Date | undefined;
+  endDate: Date | undefined;
+  /** Override pricing — if undefined, inherits from contract */
+  posted?: string;
+  max?: string;
+  leeway?: string;
+  increment?: string;
+  freight?: string;
+}
+
+let tosCounter = 0;
 
 export default function MapPage() {
   const navigate = useNavigate();
@@ -35,47 +56,131 @@ export default function MapPage() {
     toggleHeatmap,
     flyTo,
     addMarker,
+    setCompetitorMarkers,
   } = useMap(containerRef, resolvedTheme, handleReady);
 
   // ── Bid editing mode ───────────────────────────────────
   const bidState = location.state as BidEditState | null;
-  const contract = bidState?.contract ?? null;
-  const windows = contract ? (DELIVERY_WINDOWS[contract.code] ?? []) : [];
-  const contractTabId = contract ? `${CONTRACT_TAB_PREFIX}${contract.code}` : '';
+  const isCreateMode = bidState?.mode === 'create';
+  const isReviseMode = bidState?.mode === 'revise';
 
-  const tabs: MapTab[] = useMemo(() => {
-    if (!contract) return [];
-    // Parent contract is the first tab, delivery windows follow
-    return [
-      {
-        id: contractTabId,
-        label: `${contract.label} (ZC ${contract.code})`,
-        icon: TrendingUp,
-        closable: false,
-      },
-      ...windows.map((w) => ({
-        id: w.code,
-        label: w.label,
-        icon: Calendar,
-        closable: false,
-      })),
-    ];
-  }, [contract, contractTabId, windows]);
+  const scenario = isReviseMode ? bidState.scenario : null;
+
+  // ── TOS window management ─────────────────────────────
+  const [tosWindows, setTosWindows] = useState<TosWindow[]>(() => {
+    if (!scenario) return [];
+    // Seed from existing scenario windows, try to parse dates from label
+    return scenario.windows.map((w) => {
+      let startDate: Date | undefined;
+      let endDate: Date | undefined;
+      // Labels look like "Jun 1 – Jun 15" — try to parse them
+      const parts = w.window_label.split(' – ');
+      if (parts.length === 2) {
+        const year = new Date().getFullYear();
+        const s = new Date(`${parts[0].trim()}, ${year}`);
+        const e = new Date(`${parts[1].trim()}, ${year}`);
+        if (!isNaN(s.getTime())) startDate = s;
+        if (!isNaN(e.getTime())) endDate = e;
+      }
+      return {
+        id: w.window_code,
+        label: w.window_label,
+        startDate,
+        endDate,
+        ...(w.posted != null ? { posted: `${w.posted}` } : {}),
+        ...(w.max != null ? { max: `${w.max}` } : {}),
+        ...(w.leeway != null ? { leeway: `${w.leeway}` } : {}),
+        ...(w.increment != null ? { increment: `${w.increment}` } : {}),
+        ...(w.freight != null ? { freight: `${w.freight}` } : {}),
+      };
+    });
+  });
 
   const [activeTabId, setActiveTabId] = useState<string>(
-    () => bidState?.initialWindowCode ?? contractTabId,
+    () =>
+      (isReviseMode ? bidState.initialWindowCode : undefined) ?? CONTRACT_TAB,
   );
 
-  const isContractTab = activeTabId === contractTabId;
-  const activeWindow: DeliveryWindow | undefined = isContractTab
-    ? undefined
-    : windows.find((w) => w.code === activeTabId);
+  const addTosWindow = useCallback(() => {
+    tosCounter += 1;
+    const newWindow: TosWindow = {
+      id: `tos-${tosCounter}`,
+      label: `TOS ${tosCounter}`,
+      startDate: undefined,
+      endDate: undefined,
+    };
+    setTosWindows((prev) => [...prev, newWindow]);
+    setActiveTabId(newWindow.id);
+  }, []);
 
-  const isBidMode = contract !== null && tabs.length > 0;
+  const removeTosWindow = useCallback(
+    (id: string) => {
+      setTosWindows((prev) => prev.filter((w) => w.id !== id));
+      if (activeTabId === id) setActiveTabId(CONTRACT_TAB);
+    },
+    [activeTabId],
+  );
+
+  const updateTosWindow = useCallback(
+    (id: string, updates: Partial<TosWindow>) => {
+      setTosWindows((prev) =>
+        prev.map((w) => (w.id === id ? { ...w, ...updates } : w)),
+      );
+    },
+    [],
+  );
+
+  // ── Tab computation ────────────────────────────────────
+  const tabs: MapTab[] = useMemo(() => {
+    const contractTab: MapTab = {
+      id: CONTRACT_TAB,
+      label: scenario
+        ? `${scenario.contract_label} (ZC ${scenario.contract_code})`
+        : 'Contract',
+      icon: TrendingUp,
+      closable: false,
+    };
+    const windowTabs: MapTab[] = tosWindows.map((w) => ({
+      id: w.id,
+      label: w.label,
+      icon: Calendar,
+      closable: true,
+    }));
+    return [contractTab, ...windowTabs];
+  }, [scenario, tosWindows]);
+
+  const isContractTab = activeTabId === CONTRACT_TAB;
+  const activeTosWindow = isContractTab
+    ? undefined
+    : tosWindows.find((w) => w.id === activeTabId);
+
+  // Also find the matching ScenarioWindowRow for revise mode
+  const activeScenarioWindow =
+    isReviseMode && !isContractTab
+      ? scenario?.windows.find((w) => w.window_code === activeTabId)
+      : undefined;
+
+  const isBidMode = isCreateMode || isReviseMode;
 
   const closeBidMode = useCallback(() => {
+    setCompetitorMarkers([]);
     navigate('/bids', { replace: true });
-  }, [navigate]);
+  }, [navigate, setCompetitorMarkers]);
+
+  const handleCompetitorBids = useCallback(
+    (bids: CompetitorBidRow[]) => {
+      const markers = bids
+        .filter((b) => b.competitor_lng != null && b.competitor_lat != null)
+        .map((b) => ({
+          lng: b.competitor_lng!,
+          lat: b.competitor_lat!,
+          name: b.competitor_name,
+          posted: b.posted,
+        }));
+      setCompetitorMarkers(markers);
+    },
+    [setCompetitorMarkers],
+  );
 
   // ── Search handler ─────────────────────────────────────
   const handleSearch = useCallback(
@@ -110,61 +215,77 @@ export default function MapPage() {
 
   return (
     <div className="relative flex h-screen w-screen flex-col">
-      {/* ── Tab bar (bid mode only) ──────────────────────── */}
+      {/* ── Tab bar (both create and revise modes) ── */}
       {isBidMode && (
         <MapTabBar
           tabs={tabs}
           activeTabId={activeTabId}
           onTabChange={setActiveTabId}
+          onTabClose={removeTosWindow}
           leadingAction={
             <Button variant="ghost" size="icon-sm" onClick={closeBidMode}>
               <ArrowLeft />
+            </Button>
+          }
+          trailingAction={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={addTosWindow}
+              title="Add Time of Shipment"
+            >
+              <Plus className="size-4" />
             </Button>
           }
         />
       )}
 
       {/* ── Map + editor layout ──────────────────────────── */}
-      <div className="relative flex flex-1 min-h-0">
-        {/* Map container */}
-        <div className="relative flex-1">
-          <div
-            ref={containerRef}
-            className="size-full transition-opacity duration-700 ease-out"
-            style={{ opacity: mapReady ? 1 : 0 }}
-          />
+      <div className="relative flex-1 min-h-0">
+        {/* Map container (full width) */}
+        <div
+          ref={containerRef}
+          className="size-full transition-opacity duration-700 ease-out"
+          style={{ opacity: mapReady ? 1 : 0 }}
+        />
 
-          {/* Floating back button (normal mode only) */}
-          {!isBidMode && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute top-3 left-3 z-30 size-9 rounded-full !bg-card shadow-md hover:!bg-sidebar-accent hover:!text-sidebar-accent-foreground hover:ring-1 hover:ring-ring/30 animate-in fade-in slide-in-from-left-2 duration-200"
-              onClick={() => navigate('/')}
-            >
-              <ArrowLeft />
-            </Button>
-          )}
+        {/* Floating back button (normal mode — no bid editing) */}
+        {!isBidMode && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute top-3 left-3 z-30 size-9 rounded-full !bg-card shadow-md hover:!bg-sidebar-accent hover:!text-sidebar-accent-foreground hover:ring-1 hover:ring-ring/30 animate-in fade-in slide-in-from-left-2 duration-200"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft />
+          </Button>
+        )}
 
-          <MapBottomTabs
-            onDataLoaded={onDataLoaded}
-            onToggleClusters={toggleClusters}
-            onToggleHeatmap={toggleHeatmap}
-            onSearch={handleSearch}
-          />
-        </div>
-
-        {/* ── Right-side editor panel (bid mode only) ──── */}
-        {isBidMode && (isContractTab || activeWindow) && (
-          <div className="w-80 shrink-0 border-l border-border">
+        {/* ── Floating left-side editor panel (bid mode only) ──── */}
+        {isBidMode && (
+          <div className="absolute top-3 left-3 bottom-3 z-30 w-80 rounded-xl border border-border bg-card shadow-xl overflow-hidden animate-in fade-in slide-in-from-left-3 duration-300">
             <BidMapEditor
-              contract={contract}
-              window={activeWindow}
+              mode={isCreateMode ? 'create' : 'revise'}
+              scenario={scenario}
+              activeWindow={activeScenarioWindow}
+              activeTosWindow={activeTosWindow}
+              isContractTab={isContractTab}
+              elevators={isCreateMode ? bidState.elevators : undefined}
+              tosWindows={tosWindows}
               onSave={closeBidMode}
               onCancel={closeBidMode}
+              onCompetitorBids={handleCompetitorBids}
+              onUpdateTosWindow={updateTosWindow}
             />
           </div>
         )}
+
+        <MapBottomTabs
+          onDataLoaded={onDataLoaded}
+          onToggleClusters={toggleClusters}
+          onToggleHeatmap={toggleHeatmap}
+          onSearch={handleSearch}
+        />
       </div>
     </div>
   );

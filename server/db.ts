@@ -172,6 +172,26 @@ db.exec(`
   );
 `);
 
+// ── Competitor bids (daily snapshots from GeoGrains) ──
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS competitor_bids (
+    id TEXT PRIMARY KEY,
+    competitor_id TEXT NOT NULL REFERENCES competitors(id) ON DELETE CASCADE,
+    contract_code TEXT NOT NULL,
+    bid_date TEXT NOT NULL,
+    posted INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_competitor_bids_lookup
+    ON competitor_bids(contract_code, bid_date);
+  CREATE INDEX IF NOT EXISTS idx_competitor_bids_competitor
+    ON competitor_bids(competitor_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_competitor_bids_unique
+    ON competitor_bids(competitor_id, contract_code, bid_date);
+`);
+
 // ── Scenarios (merchant bid pricing models) ──
 
 // Migration: recreate tables if FK constraints are missing (early schema had no CASCADE)
