@@ -288,7 +288,7 @@ export function MapBottomTabs({
                 className={`flex w-full flex-col items-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   activeTab === tab.id
                     ? 'bg-primary text-primary-foreground font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted hover:ring-1 hover:ring-ring/30'
+                    : 'text-muted-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:ring-1 hover:ring-ring/30'
                 }`}
               >
                 <tab.icon className="size-5" />
