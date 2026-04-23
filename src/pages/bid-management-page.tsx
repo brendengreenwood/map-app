@@ -91,7 +91,7 @@ export default function BidManagementPage() {
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
         icon={TrendingUp}
-        title="Bid Management"
+        title="Scenarios"
         description="Manage corn futures contract bids and forward delivery pricing."
       >
         <div className="flex gap-2">

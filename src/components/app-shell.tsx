@@ -26,7 +26,7 @@ const navItems = [
   { title: 'Map', path: '/map', icon: Map },
   { title: 'Producers', path: '/producers', icon: Wheat },
   { title: 'Competitors', path: '/competitors', icon: Building2 },
-  { title: 'Bids', path: '/bids', icon: TrendingUp },
+  { title: 'Scenarios', path: '/bids', icon: TrendingUp },
   { title: 'Admin', path: '/admin', icon: Shield, adminOnly: true },
   { title: 'Settings', path: '/settings', icon: Settings },
 ];
