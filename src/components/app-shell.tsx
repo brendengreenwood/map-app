@@ -80,9 +80,7 @@ export function AppShell() {
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild tooltip="Map App">
                 <NavLink to="/">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <Map className="!size-4" />
-                  </div>
+                  <Map className="!size-5 text-primary" />
                   <span className="truncate font-semibold">Map App</span>
                 </NavLink>
               </SidebarMenuButton>
