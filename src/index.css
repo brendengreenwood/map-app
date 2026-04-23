@@ -104,7 +104,7 @@
     --accent: var(--sprout-green-100);                   /* green-100: accent tint */
     --accent-foreground: var(--sprout-green-900);        /* green-900: accent text */
     --destructive: var(--sprout-ruby-red-500);           /* ruby-red-500: errors */
-    --border: var(--sprout-neutral-300);                 /* neutral-300: borders */
+    --border: var(--sprout-neutral-400);                 /* neutral-400: borders (matches input) */
     --input: var(--sprout-neutral-400);                  /* neutral-400: input borders */
     --ring: var(--sprout-green-400);                     /* green-400: focus rings */
     --chart-1: var(--sprout-green-400);
@@ -119,7 +119,7 @@
     --sidebar-primary-foreground: oklch(1 0 0);
     --sidebar-accent: var(--sprout-green-100);
     --sidebar-accent-foreground: var(--sprout-green-900);
-    --sidebar-border: var(--sprout-neutral-300);
+    --sidebar-border: var(--sprout-neutral-400);
     --sidebar-ring: var(--sprout-green-400);
 }
 
@@ -143,7 +143,7 @@
     --accent: var(--sprout-neutral-700);                 /* neutral-700: accent bg */
     --accent-foreground: var(--sprout-green-200);        /* green-200: accent text */
     --destructive: var(--sprout-ruby-red-100);           /* ruby-red-100: lighter red for dark */
-    --border: var(--sprout-neutral-700);                 /* neutral-700: borders */
+    --border: var(--sprout-neutral-600);                 /* neutral-600: borders (improved contrast) */
     --input: var(--sprout-neutral-500);                  /* neutral-500: input borders */
     --ring: var(--sprout-green-200);                     /* green-200: focus rings */
     --chart-1: var(--sprout-green-200);
@@ -157,7 +157,7 @@
     --sidebar-primary-foreground: var(--sprout-neutral-1000);
     --sidebar-accent: var(--sprout-neutral-700);
     --sidebar-accent-foreground: var(--sprout-green-200);
-    --sidebar-border: var(--sprout-neutral-700);
+    --sidebar-border: var(--sprout-neutral-600);
     --sidebar-ring: var(--sprout-green-200);
 }
 

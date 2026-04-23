@@ -71,7 +71,7 @@ export function MapTabBar({
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isActive
                   ? 'z-10 border-border bg-background text-foreground -mb-px'
-                  : 'border-border/50 bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                  : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
               )}
             >
               {Icon && <Icon className="size-3.5 shrink-0" />}
