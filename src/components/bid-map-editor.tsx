@@ -48,6 +48,10 @@ interface BidMapEditorProps {
   onPublishStateChange?: (state: { save: () => void; disabled: boolean; saving: boolean }) => void;
   /** Called when selected contract code changes (so competitor panel can fetch bids) */
   onContractCodeChange?: (code: string | null) => void;
+  /** Lookback date for competitor bids */
+  lookbackDate?: Date;
+  /** Called when lookback date changes */
+  onLookbackDateChange?: (date: Date) => void;
 }
 
 function getWindowPricing(scenario: ScenarioRow, window: ScenarioWindowRow) {
@@ -74,6 +78,8 @@ export function BidMapEditor({
   onUpdateTosWindow,
   onPublishStateChange,
   onContractCodeChange,
+  lookbackDate,
+  onLookbackDateChange,
 }: BidMapEditorProps) {
   const { activeUser } = useUsers();
   const isCreateMode = mode === 'create';
@@ -530,6 +536,36 @@ export function BidMapEditor({
                       </Select>
                     </Field>
 
+                    {/* Lookback date picker */}
+                    <Field orientation="horizontal">
+                      <FieldLabel className="w-20 shrink-0 text-xs">Lookback</FieldLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
+                              'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                              !lookbackDate && 'text-muted-foreground',
+                            )}
+                          >
+                            <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
+                            {lookbackDate
+                              ? format(lookbackDate, 'MMM d, yyyy')
+                              : 'Pick a date'}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={lookbackDate}
+                            onSelect={(d) => d && onLookbackDateChange?.(d)}
+                            disabled={(d) => d > new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </Field>
+
                   </FieldGroup>
                   <Separator />
                 </>
@@ -593,6 +629,43 @@ export function BidMapEditor({
                       );
                     })}
                   </div>
+                  <Separator />
+                </>
+              )}
+
+              {/* ── Lookback date picker (revise mode, contract tab) ── */}
+              {!isCreateMode && isContractLevel && (
+                <>
+                  <FieldGroup className="gap-2 [&_[data-slot=field-label]]:flex-none">
+                    <Field orientation="horizontal">
+                      <FieldLabel className="w-20 shrink-0 text-xs">Lookback</FieldLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
+                              'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                              !lookbackDate && 'text-muted-foreground',
+                            )}
+                          >
+                            <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
+                            {lookbackDate
+                              ? format(lookbackDate, 'MMM d, yyyy')
+                              : 'Pick a date'}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={lookbackDate}
+                            onSelect={(d) => d && onLookbackDateChange?.(d)}
+                            disabled={(d) => d > new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </Field>
+                  </FieldGroup>
                   <Separator />
                 </>
               )}

@@ -1,13 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Icon } from '@/components/ui/icon';
-import { mdiCalendar, mdiLoading, mdiMapMarkerOutline } from '@mdi/js';
+import { mdiLoading, mdiMapMarkerOutline } from '@mdi/js';
 import { cn } from '@/lib/utils';
 import { fetchCompetitorBids, type CompetitorBidRow } from '@/lib/api';
 
@@ -20,15 +16,17 @@ export interface EditableCompetitorBid extends CompetitorBidRow {
 interface CompetitorBidsPanelProps {
   /** Contract code to fetch bids for (e.g. "N26"). Null = show placeholder. */
   contractCode: string | null;
+  /** Lookback date for competitor bids */
+  lookbackDate: Date;
   /** Called whenever bids change (initial fetch or user edits) */
   onBidsChange?: (bids: EditableCompetitorBid[]) => void;
 }
 
 export function CompetitorBidsPanel({
   contractCode,
+  lookbackDate,
   onBidsChange,
 }: CompetitorBidsPanelProps) {
-  const [lookbackDate, setLookbackDate] = useState<Date>(() => new Date());
   const [bids, setBids] = useState<EditableCompetitorBid[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -92,40 +90,6 @@ export function CompetitorBidsPanel({
 
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-3 p-4">
-          {/* Lookback date picker */}
-          <div className="flex items-center gap-2">
-            <span className="w-16 shrink-0 text-xs text-muted-foreground">
-              Lookback
-            </span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    'h-8 flex-1 justify-start bg-transparent px-2.5 text-xs font-normal',
-                    !lookbackDate && 'text-muted-foreground',
-                  )}
-                >
-                  <Icon path={mdiCalendar} className="mr-1.5 size-3.5 text-muted-foreground" />
-                  {lookbackDate
-                    ? format(lookbackDate, 'MMMM do, yyyy')
-                    : 'Pick a date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={lookbackDate}
-                  onSelect={(d) => d && setLookbackDate(d)}
-                  disabled={(d) => d > new Date()}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <Separator />
-
           {/* Bid list */}
           {loading ? (
             <div className="flex h-24 items-center justify-center text-xs text-muted-foreground">

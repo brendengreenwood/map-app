@@ -169,6 +169,9 @@ export default function MapPage() {
     () => isReviseMode ? scenario?.contract_code ?? null : null,
   );
 
+  // ── Lookback date (shared between editor + competitor bids panel) ──
+  const [lookbackDate, setLookbackDate] = useState<Date>(() => new Date());
+
   const handleCompetitorBids = useCallback(
     (bids: EditableCompetitorBid[]) => {
       const markers = bids
@@ -289,6 +292,8 @@ export default function MapPage() {
               onUpdateTosWindow={updateTosWindow}
               onPublishStateChange={setPublishState}
               onContractCodeChange={setCompetitorContractCode}
+              lookbackDate={lookbackDate}
+              onLookbackDateChange={setLookbackDate}
             />
           </div>
         )}
@@ -298,6 +303,7 @@ export default function MapPage() {
           <div className="absolute top-3 right-3 bottom-3 z-30 w-72 rounded-xl border border-border bg-card shadow-xl overflow-hidden animate-in fade-in slide-in-from-right-3 duration-300">
             <CompetitorBidsPanel
               contractCode={competitorContractCode}
+              lookbackDate={lookbackDate}
               onBidsChange={handleCompetitorBids}
             />
           </div>
