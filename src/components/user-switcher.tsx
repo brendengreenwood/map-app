@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronsUpDown, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiUnfoldMoreHorizontal, mdiPlus, mdiPencilOutline, mdiTrashCanOutline } from '@mdi/js';
 import { useUsers } from '@/hooks/use-users';
 import type { UserType } from '@/hooks/use-users';
 import { cn } from '@/lib/utils';
@@ -151,7 +152,7 @@ export function UserSwitcher() {
                 <TypeBadges types={activeUser.types} />
               </span>
             </div>
-            <ChevronsUpDown className="ml-auto" />
+            <Icon path={mdiUnfoldMoreHorizontal} className="ml-auto" />
           </SidebarMenuButton>
         </PopoverTrigger>
         <PopoverContent
@@ -223,7 +224,7 @@ export function UserSwitcher() {
               <CommandSeparator />
               <CommandGroup>
                 <CommandItem onSelect={openAdd}>
-                  <Plus data-icon="inline-start" />
+                  <Icon path={mdiPlus} data-icon="inline-start" />
                   Add User
                 </CommandItem>
               </CommandGroup>
@@ -308,14 +309,14 @@ function UserCommandItem({
           onClick={(e) => { e.stopPropagation(); onEdit(user); }}
           className="rounded p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Pencil className="size-3 text-muted-foreground" />
+          <Icon path={mdiPencilOutline} className="size-3 text-muted-foreground" />
         </button>
         {onDelete && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(user.id); }}
             className="rounded p-0.5 hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Trash2 className="size-3 text-muted-foreground hover:text-destructive" />
+            <Icon path={mdiTrashCanOutline} className="size-3 text-muted-foreground hover:text-destructive" />
           </button>
         )}
       </span>

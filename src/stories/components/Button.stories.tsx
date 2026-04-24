@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { Plus, Trash2, Download, ArrowRight } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiPlus, mdiTrashCanOutline, mdiDownload, mdiArrowRight } from '@mdi/js';
 
 const meta = {
   title: 'Components/Button',
@@ -58,16 +59,16 @@ export const WithIcon: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       <Button>
-        <Plus data-icon="inline-start" /> Add Item
+        <Icon path={mdiPlus} data-icon="inline-start" /> Add Item
       </Button>
       <Button variant="destructive">
-        <Trash2 data-icon="inline-start" /> Delete
+        <Icon path={mdiTrashCanOutline} data-icon="inline-start" /> Delete
       </Button>
       <Button variant="outline">
-        Download <Download data-icon="inline-end" />
+        Download <Icon path={mdiDownload} data-icon="inline-end" />
       </Button>
       <Button variant="secondary">
-        Next <ArrowRight data-icon="inline-end" />
+        Next <Icon path={mdiArrowRight} data-icon="inline-end" />
       </Button>
     </div>
   ),
@@ -89,9 +90,9 @@ export const Loading: Story = {
 export const IconOnly: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 8 }}>
-      <Button size="icon" variant="outline"><Plus /></Button>
-      <Button size="icon" variant="ghost"><Trash2 /></Button>
-      <Button size="icon" variant="destructive"><Trash2 /></Button>
+      <Button size="icon" variant="outline"><Icon path={mdiPlus} /></Button>
+      <Button size="icon" variant="ghost"><Icon path={mdiTrashCanOutline} /></Button>
+      <Button size="icon" variant="destructive"><Icon path={mdiTrashCanOutline} /></Button>
     </div>
   ),
 };

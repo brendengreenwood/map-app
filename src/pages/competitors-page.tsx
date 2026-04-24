@@ -11,7 +11,8 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Trash2, Plus, Building2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiTrashCanOutline, mdiPlus, mdiOfficeBuildingOutline } from '@mdi/js';
 import { PageHeader } from '@/components/page-header';
 import { toast } from 'sonner';
 import {
@@ -120,12 +121,12 @@ export default function CompetitorsPage() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
-        icon={Building2}
+        icon={mdiOfficeBuildingOutline}
         title="Competitors"
         description={`${competitors.length} ${competitors.length === 1 ? 'competitor' : 'competitors'}`}
       >
         <Button onClick={handleOpen}>
-          <Plus data-icon="inline-start" />
+          <Icon path={mdiPlus} data-icon="inline-start" />
           Add Competitor
         </Button>
       </PageHeader>
@@ -139,7 +140,7 @@ export default function CompetitorsPage() {
             </div>
           ) : competitors.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <Building2 className="size-10 text-muted-foreground/50" />
+              <Icon path={mdiOfficeBuildingOutline} className="size-10 text-muted-foreground/50" />
               <p className="text-sm font-medium text-muted-foreground">No competitors yet</p>
               <p className="text-xs text-muted-foreground/75">Click "Add Competitor" to get started.</p>
             </div>
@@ -183,7 +184,7 @@ export default function CompetitorsPage() {
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="text-destructive" disabled={deletingId === c.id} onClick={() => handleDelete(c.id)}>
-                        {deletingId === c.id ? <Spinner /> : <Trash2 />}
+                        {deletingId === c.id ? <Spinner /> : <Icon path={mdiTrashCanOutline} />}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -245,7 +246,7 @@ export default function CompetitorsPage() {
 
           <SheetFooter>
             <Button onClick={handleSubmit} disabled={submitting || !name.trim()} className="w-full">
-              {submitting ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" />}
+              {submitting ? <Spinner data-icon="inline-start" /> : <Icon path={mdiPlus} data-icon="inline-start" />}
               {submitting ? 'Creating...' : 'Create Competitor'}
             </Button>
           </SheetFooter>

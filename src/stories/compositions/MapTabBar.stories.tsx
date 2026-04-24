@@ -2,12 +2,13 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MapTabBar, type MapTab } from '@/components/map-tab-bar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Map, Layers, Route, Compass } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiArrowLeft, mdiPlus, mdiMap, mdiLayers, mdiRoutes, mdiCompass } from '@mdi/js';
 
 const SAMPLE_TABS: MapTab[] = [
-  { id: 'main', label: 'Main Map', icon: Map },
-  { id: 'heatmap', label: 'Heatmap View', icon: Layers },
-  { id: 'route-1', label: 'Route Planning', icon: Route },
+  { id: 'main', label: 'Main Map', icon: mdiMap },
+  { id: 'heatmap', label: 'Heatmap View', icon: mdiLayers },
+  { id: 'route-1', label: 'Route Planning', icon: mdiRoutes },
 ];
 
 const meta: Meta<typeof MapTabBar> = {
@@ -39,7 +40,7 @@ export const WithBackButton: Story = {
   args: {
     leadingAction: (
       <Button variant="ghost" size="icon-sm" onClick={() => alert('Back!')}>
-        <ArrowLeft />
+        <Icon path={mdiArrowLeft} />
       </Button>
     ),
   },
@@ -50,12 +51,12 @@ export const WithActions: Story = {
   args: {
     leadingAction: (
       <Button variant="ghost" size="icon-sm">
-        <ArrowLeft />
+        <Icon path={mdiArrowLeft} />
       </Button>
     ),
     trailingAction: (
       <Button variant="ghost" size="icon-sm">
-        <Plus />
+        <Icon path={mdiPlus} />
       </Button>
     ),
   },
@@ -64,7 +65,7 @@ export const WithActions: Story = {
 export const SingleTab: Story = {
   name: 'Single Tab',
   args: {
-    tabs: [{ id: 'main', label: 'Main Map', icon: Map }],
+    tabs: [{ id: 'main', label: 'Main Map', icon: mdiMap }],
     activeTabId: 'main',
   },
 };
@@ -73,23 +74,23 @@ export const ManyTabs: Story = {
   name: 'Many Tabs (overflow)',
   args: {
     tabs: [
-      { id: 'main', label: 'Main Map', icon: Map },
-      { id: 'heat', label: 'Heatmap View', icon: Layers },
-      { id: 'route-1', label: 'Route A → B', icon: Route },
-      { id: 'route-2', label: 'Route C → D', icon: Route },
-      { id: 'compass', label: 'Navigation', icon: Compass },
+      { id: 'main', label: 'Main Map', icon: mdiMap },
+      { id: 'heat', label: 'Heatmap View', icon: mdiLayers },
+      { id: 'route-1', label: 'Route A → B', icon: mdiRoutes },
+      { id: 'route-2', label: 'Route C → D', icon: mdiRoutes },
+      { id: 'compass', label: 'Navigation', icon: mdiCompass },
       { id: 'extra-1', label: 'Producer Overlay' },
       { id: 'extra-2', label: 'Competitor Overlay' },
     ],
     activeTabId: 'heat',
     leadingAction: (
       <Button variant="ghost" size="icon-sm">
-        <ArrowLeft />
+        <Icon path={mdiArrowLeft} />
       </Button>
     ),
     trailingAction: (
       <Button variant="ghost" size="icon-sm">
-        <Plus />
+        <Icon path={mdiPlus} />
       </Button>
     ),
   },
@@ -99,9 +100,9 @@ export const Interactive: Story = {
   name: 'Interactive (click tabs)',
   render: function InteractiveStory() {
     const [tabs, setTabs] = useState<MapTab[]>([
-      { id: 'main', label: 'Main Map', icon: Map },
-      { id: 'heatmap', label: 'Heatmap View', icon: Layers },
-      { id: 'route', label: 'Route Planning', icon: Route },
+      { id: 'main', label: 'Main Map', icon: mdiMap },
+      { id: 'heatmap', label: 'Heatmap View', icon: mdiLayers },
+      { id: 'route', label: 'Route Planning', icon: mdiRoutes },
     ]);
     const [activeId, setActiveId] = useState('main');
     let counter = tabs.length;
@@ -120,12 +121,12 @@ export const Interactive: Story = {
         onTabChange={setActiveId}
         leadingAction={
           <Button variant="ghost" size="icon-sm" onClick={() => alert('Back!')}>
-            <ArrowLeft />
+            <Icon path={mdiArrowLeft} />
           </Button>
         }
         trailingAction={
           <Button variant="ghost" size="icon-sm" onClick={handleAdd}>
-            <Plus />
+            <Icon path={mdiPlus} />
           </Button>
         }
       />

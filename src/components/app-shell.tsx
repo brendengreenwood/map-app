@@ -1,5 +1,10 @@
 import { NavLink, Outlet, useLocation, useMatch } from 'react-router-dom';
-import { Map, LayoutDashboard, Settings, Shield, Sun, Moon, Monitor, Wheat, Building2, TrendingUp } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import {
+  mdiMap, mdiViewDashboardOutline, mdiCogOutline, mdiShieldOutline,
+  mdiWeatherSunny, mdiWeatherNight, mdiMonitor, mdiBarley, mdiOfficeBuilding,
+  mdiChartTimelineVariant,
+} from '@mdi/js';
 import {
   Sidebar,
   SidebarContent,
@@ -21,31 +26,31 @@ import { useUsers } from '@/hooks/use-users';
 import type { Theme } from '@/hooks/use-users';
 
 const navItems = [
-  { title: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { title: 'Map', path: '/map', icon: Map },
-  { title: 'Producers', path: '/producers', icon: Wheat },
-  { title: 'Competitors', path: '/competitors', icon: Building2 },
-  { title: 'Scenarios', path: '/bids', icon: TrendingUp },
-  { title: 'Admin', path: '/admin', icon: Shield, adminOnly: true },
-  { title: 'Settings', path: '/settings', icon: Settings },
+  { title: 'Dashboard', path: '/', icon: mdiViewDashboardOutline },
+  { title: 'Map', path: '/map', icon: mdiMap },
+  { title: 'Producers', path: '/producers', icon: mdiBarley },
+  { title: 'Competitors', path: '/competitors', icon: mdiOfficeBuilding },
+  { title: 'Scenarios', path: '/bids', icon: mdiChartTimelineVariant },
+  { title: 'Admin', path: '/admin', icon: mdiShieldOutline, adminOnly: true },
+  { title: 'Settings', path: '/settings', icon: mdiCogOutline },
 ];
 
 const THEME_CYCLE: Theme[] = ['light', 'dark', 'system'];
-const THEME_ICON = { light: Sun, dark: Moon, system: Monitor } as const;
+const THEME_ICON = { light: mdiWeatherSunny, dark: mdiWeatherNight, system: mdiMonitor } as const;
 const THEME_LABEL = { light: 'Light', dark: 'Dark', system: 'System' } as const;
 
 function ThemeToggle() {
   const { activeUser, updatePreferences } = useUsers();
   const current = activeUser.preferences.theme ?? 'system';
   const next = THEME_CYCLE[(THEME_CYCLE.indexOf(current) + 1) % THEME_CYCLE.length];
-  const Icon = THEME_ICON[current];
+  const themeIcon = THEME_ICON[current];
 
   return (
     <SidebarMenuButton
       tooltip={`Theme: ${THEME_LABEL[current]}`}
       onClick={() => updatePreferences({ theme: next })}
     >
-      <Icon />
+      <Icon path={themeIcon} />
       <span>{THEME_LABEL[current]}</span>
     </SidebarMenuButton>
   );
@@ -57,7 +62,7 @@ function NavItem({ item }: { item: typeof navItems[number] }) {
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={!!match} tooltip={item.title}>
         <NavLink to={item.path}>
-          <item.icon />
+          <Icon path={item.icon} />
           <span>{item.title}</span>
         </NavLink>
       </SidebarMenuButton>
@@ -79,7 +84,7 @@ export function AppShell() {
             <SidebarMenuItem>
               <SidebarMenuButton size="default" asChild tooltip="Map App">
                 <NavLink to="/">
-                  <Map className="!size-5 -ml-0.5 text-primary" />
+                  <Icon path={mdiMap} className="!size-5 -ml-0.5 text-primary" />
                   <span className="truncate font-semibold group-data-[collapsible=icon]:hidden">Map App</span>
                 </NavLink>
               </SidebarMenuButton>

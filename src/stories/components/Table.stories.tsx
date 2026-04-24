@@ -4,7 +4,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiTrashCanOutline } from '@mdi/js';
 
 const meta = {
   title: 'Components/Table',
@@ -50,7 +51,7 @@ export const Default: Story = {
               {new Date(p.created).toLocaleDateString()}
             </TableCell>
             <TableCell>
-              <Button variant="ghost" size="icon" className="text-destructive"><Trash2 /></Button>
+              <Button variant="ghost" size="icon" className="text-destructive"><Icon path={mdiTrashCanOutline} /></Button>
             </TableCell>
           </TableRow>
         ))}

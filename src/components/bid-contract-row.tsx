@@ -4,7 +4,8 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { formatBasis, formatFreight } from '@/lib/bid-data';
 import type { ScenarioRow, ScenarioWindowRow } from '@/lib/api';
-import { ChevronDown, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiChevronDown, mdiEyeOutline, mdiPencilOutline, mdiTrashCanOutline } from '@mdi/js';
 
 interface BidContractRowProps {
   scenario: ScenarioRow;
@@ -45,7 +46,8 @@ export function BidContractRow({
         onClick={onToggle}
       >
         <TableCell className="w-8 pl-3 pr-0">
-          <ChevronDown
+          <Icon
+            path={mdiChevronDown}
             className={cn(
               'size-4 text-muted-foreground transition-transform',
               expanded && 'rotate-180',
@@ -76,15 +78,15 @@ export function BidContractRow({
         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-end gap-1">
             <Button variant="ghost" size="sm">
-              <Eye data-icon="inline-start" />
+              <Icon path={mdiEyeOutline} data-icon="inline-start" />
               View
             </Button>
             <Button size="sm" onClick={onRevise}>
-              <Pencil data-icon="inline-start" />
+              <Icon path={mdiPencilOutline} data-icon="inline-start" />
               Revise
             </Button>
             <Button variant="ghost" size="sm" onClick={onDelete}>
-              <Trash2 className="size-3.5" />
+              <Icon path={mdiTrashCanOutline} className="size-3.5" />
             </Button>
           </div>
         </TableCell>
@@ -141,7 +143,7 @@ export function BidContractRow({
               <TableCell className="text-right">
                 <div className="flex justify-end gap-1">
                   <Button variant="ghost" size="sm">
-                    <Eye data-icon="inline-start" />
+                    <Icon path={mdiEyeOutline} data-icon="inline-start" />
                     View
                   </Button>
                   <Button
@@ -149,7 +151,7 @@ export function BidContractRow({
                     size="sm"
                     onClick={() => onReviseWindow?.(w.window_code)}
                   >
-                    <Pencil data-icon="inline-start" />
+                    <Icon path={mdiPencilOutline} data-icon="inline-start" />
                     Revise
                   </Button>
                 </div>

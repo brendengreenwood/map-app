@@ -15,9 +15,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  CalendarIcon, Loader2, MapPin,
-} from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiCalendar, mdiLoading, mdiMapMarkerOutline } from '@mdi/js';
 import { cn } from '@/lib/utils';
 import { formatBasis, formatFreight, CORN_CONTRACTS } from '@/lib/bid-data';
 import {
@@ -382,7 +381,7 @@ export function BidMapEditor({
                           !activeTosWindow?.startDate && 'text-muted-foreground',
                         )}
                       >
-                        <CalendarIcon className="size-3.5 text-muted-foreground" />
+                        <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
                         {activeTosWindow?.startDate
                           ? format(activeTosWindow.startDate, 'MMM d, yyyy')
                           : 'Start date'}
@@ -412,7 +411,7 @@ export function BidMapEditor({
                           !activeTosWindow?.endDate && 'text-muted-foreground',
                         )}
                       >
-                        <CalendarIcon className="size-3.5 text-muted-foreground" />
+                        <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
                         {activeTosWindow?.endDate
                           ? format(activeTosWindow.endDate, 'MMM d, yyyy')
                           : 'End date'}
@@ -522,7 +521,7 @@ export function BidMapEditor({
                 </div>
                 {loadingBids ? (
                   <div className="flex h-16 items-center justify-center text-xs text-muted-foreground">
-                    <Loader2 className="mr-2 size-3 animate-spin" />
+                    <Icon path={mdiLoading} className="mr-2 size-3 animate-spin" />
                     Loading bids...
                   </div>
                 ) : competitorBids.length === 0 ? (
@@ -536,7 +535,7 @@ export function BidMapEditor({
                       className="flex items-center justify-between rounded-sm bg-muted/50 px-2 py-1.5 text-xs"
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <MapPin className="size-3 shrink-0 text-muted-foreground" />
+                        <Icon path={mdiMapMarkerOutline} className="size-3 shrink-0 text-muted-foreground" />
                         <span className="truncate">{bid.competitor_name}</span>
                       </div>
                       <span className="shrink-0 font-mono text-muted-foreground">
@@ -566,7 +565,7 @@ export function BidMapEditor({
                           {(elevators ?? []).map((e) => (
                             <SelectItem key={e.id} value={e.id}>
                               <div className="flex items-center gap-2">
-                                <MapPin className="size-3 text-muted-foreground" />
+                                <Icon path={mdiMapMarkerOutline} className="size-3 text-muted-foreground" />
                                 {e.name}
                               </div>
                             </SelectItem>
@@ -603,7 +602,7 @@ export function BidMapEditor({
                               !lookbackDate && 'text-muted-foreground',
                             )}
                           >
-                            <CalendarIcon className="size-3.5 text-muted-foreground" />
+                            <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
                             {lookbackDate ? format(lookbackDate, 'PPP') : 'Pick a date'}
                           </button>
                         </PopoverTrigger>
@@ -699,7 +698,7 @@ export function BidMapEditor({
                             !lookbackDate && 'text-muted-foreground',
                           )}
                         >
-                          <CalendarIcon className="size-3.5 text-muted-foreground" />
+                          <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
                           {lookbackDate ? format(lookbackDate, 'PPP') : 'Pick a date'}
                         </button>
                       </PopoverTrigger>
@@ -780,7 +779,7 @@ export function BidMapEditor({
                 </div>
                 {loadingBids ? (
                   <div className="flex h-16 items-center justify-center text-xs text-muted-foreground">
-                    <Loader2 className="mr-2 size-3 animate-spin" />
+                    <Icon path={mdiLoading} className="mr-2 size-3 animate-spin" />
                     Loading bids...
                   </div>
                 ) : competitorBids.length === 0 ? (
@@ -794,7 +793,7 @@ export function BidMapEditor({
                       className="flex items-center justify-between rounded-sm bg-muted/50 px-2 py-1.5 text-xs"
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <MapPin className="size-3 shrink-0 text-muted-foreground" />
+                        <Icon path={mdiMapMarkerOutline} className="size-3 shrink-0 text-muted-foreground" />
                         <span className="truncate">{bid.competitor_name}</span>
                       </div>
                       <span className="shrink-0 font-mono text-muted-foreground">
@@ -836,7 +835,7 @@ export function BidMapEditor({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmReplace} disabled={saving}>
-              {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {saving && <Icon path={mdiLoading} className="mr-2 size-4 animate-spin" />}
               Replace
             </AlertDialogAction>
           </AlertDialogFooter>

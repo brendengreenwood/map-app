@@ -1,4 +1,5 @@
-import { type ReactNode, type ComponentType, type SVGProps } from 'react';
+import { type ReactNode } from 'react';
+import { Icon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -8,7 +9,7 @@ import { cn } from '@/lib/utils';
 export interface MapTab {
   id: string;
   label: string;
-  icon?: ComponentType<SVGProps<SVGSVGElement>>;
+  icon?: string;
 
 }
 
@@ -60,8 +61,6 @@ export function MapTabBar({
       <div className="flex min-w-0 flex-1 items-end gap-1 overflow-x-auto overflow-y-hidden pl-1">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
-          const Icon = tab.icon;
-
           return (
             <button
               key={tab.id}
@@ -74,7 +73,7 @@ export function MapTabBar({
                   : 'border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
               )}
             >
-              {Icon && <Icon className="size-3.5 shrink-0" />}
+              {tab.icon && <Icon path={tab.icon} className="size-3.5 shrink-0" />}
               <span className="truncate">{tab.label}</span>
             </button>
           );

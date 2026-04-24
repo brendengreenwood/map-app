@@ -11,7 +11,8 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Trash2, Plus, Wheat, ChevronRight, ChevronLeft, X, MapPin } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiTrashCanOutline, mdiPlus, mdiBarley, mdiChevronRight, mdiChevronLeft, mdiClose, mdiMapMarkerOutline } from '@mdi/js';
 import { PageHeader } from '@/components/page-header';
 import { toast } from 'sonner';
 import {
@@ -190,12 +191,12 @@ export default function ProducersPage() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
-        icon={Wheat}
+        icon={mdiBarley}
         title="Producers"
         description={`${producers.length} ${producers.length === 1 ? 'producer' : 'producers'}`}
       >
         <Button onClick={handleOpen}>
-          <Plus data-icon="inline-start" />
+          <Icon path={mdiPlus} data-icon="inline-start" />
           Add Producer
         </Button>
       </PageHeader>
@@ -209,7 +210,7 @@ export default function ProducersPage() {
             </div>
           ) : producers.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <Wheat className="size-10 text-muted-foreground/50" />
+              <Icon path={mdiBarley} className="size-10 text-muted-foreground/50" />
               <p className="text-sm font-medium text-muted-foreground">No producers yet</p>
               <p className="text-xs text-muted-foreground/75">Click "Add Producer" to get started.</p>
             </div>
@@ -250,7 +251,7 @@ export default function ProducersPage() {
                         <div className="flex gap-1 flex-wrap">
                           {p.elevators.map((e) => (
                             <Badge key={e.id} variant="outline" className="gap-1">
-                              <MapPin className="size-3" />
+                              <Icon path={mdiMapMarkerOutline} className="size-3" />
                               {e.name}
                             </Badge>
                           ))}
@@ -264,7 +265,7 @@ export default function ProducersPage() {
                     <TableCell className="text-muted-foreground">—</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="text-destructive" disabled={deletingId === p.id} onClick={() => handleDelete(p.id)}>
-                        {deletingId === p.id ? <Spinner /> : <Trash2 />}
+                        {deletingId === p.id ? <Spinner /> : <Icon path={mdiTrashCanOutline} />}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -356,7 +357,7 @@ export default function ProducersPage() {
                         <span className="text-xs font-medium text-muted-foreground">Location {i + 1}</span>
                         {locations.length > 1 && (
                           <Button variant="ghost" size="icon" className="size-6 text-muted-foreground" onClick={() => removeLocation(i)}>
-                            <X />
+                            <Icon path={mdiClose} />
                           </Button>
                         )}
                       </div>
@@ -398,7 +399,7 @@ export default function ProducersPage() {
                   </Card>
                 ))}
                 <Button variant="outline" onClick={addLocation}>
-                  <Plus data-icon="inline-start" />
+                  <Icon path={mdiPlus} data-icon="inline-start" />
                   Add Another Location
                 </Button>
               </div>
@@ -416,7 +417,7 @@ export default function ProducersPage() {
                   </div>
                 ) : elevators.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-                    <MapPin className="size-8 text-muted-foreground/50" />
+                    <Icon path={mdiMapMarkerOutline} className="size-8 text-muted-foreground/50" />
                     <p className="text-sm text-muted-foreground">No elevators found</p>
                     <p className="text-xs text-muted-foreground/75">Add elevators from the map first.</p>
                   </div>
@@ -492,7 +493,7 @@ export default function ProducersPage() {
                         const locAddr = formatAddress({ street: loc.street, city: loc.city, state: loc.state, zip: loc.zip });
                         return (
                           <div key={i} className="flex items-center gap-2 text-sm">
-                            <MapPin className="size-3.5 text-muted-foreground shrink-0" />
+                            <Icon path={mdiMapMarkerOutline} className="size-3.5 text-muted-foreground shrink-0" />
                             <span className="font-medium">{loc.name}</span>
                             {locAddr && (
                               <span className="text-muted-foreground">— {locAddr}</span>
@@ -515,7 +516,7 @@ export default function ProducersPage() {
                           const elevAddr = formatAddress(e) || e.address;
                           return (
                             <div key={e.id} className="flex items-center gap-2 text-sm">
-                              <MapPin className="size-3.5 text-muted-foreground shrink-0" />
+                              <Icon path={mdiMapMarkerOutline} className="size-3.5 text-muted-foreground shrink-0" />
                               <span className="font-medium">{e.name}</span>
                               {elevAddr && (
                                 <span className="text-muted-foreground">— {elevAddr}</span>
@@ -533,7 +534,7 @@ export default function ProducersPage() {
           <SheetFooter className="flex-row gap-2">
             {stepIndex > 0 && (
               <Button variant="outline" onClick={() => setStep(STEPS[stepIndex - 1])}>
-                <ChevronLeft data-icon="inline-start" />
+                <Icon path={mdiChevronLeft} data-icon="inline-start" />
                 Back
               </Button>
             )}
@@ -541,11 +542,11 @@ export default function ProducersPage() {
             {stepIndex < STEPS.length - 1 ? (
               <Button onClick={() => setStep(STEPS[stepIndex + 1])} disabled={!canNext}>
                 Next
-                <ChevronRight data-icon="inline-end" />
+                <Icon path={mdiChevronRight} data-icon="inline-end" />
               </Button>
             ) : (
               <Button onClick={handleSubmit} disabled={submitting || !name.trim()}>
-                {submitting ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" />}
+                {submitting ? <Spinner data-icon="inline-start" /> : <Icon path={mdiPlus} data-icon="inline-start" />}
                 {submitting ? 'Creating...' : 'Create Producer'}
               </Button>
             )}

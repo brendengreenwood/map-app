@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { fetchStats, type Stats } from '@/lib/api';
-import { Database, Layers, MapPin, Tag } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiDatabase, mdiLayers, mdiMapMarkerOutline, mdiTag } from '@mdi/js';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -38,7 +39,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Features</CardTitle>
-            <Database className="text-muted-foreground" />
+            <Icon path={mdiDatabase} className="text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total.toLocaleString()}</div>
@@ -48,7 +49,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Categories</CardTitle>
-            <Tag className="text-muted-foreground" />
+            <Icon path={mdiTag} className="text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.categories.length}</div>
@@ -58,7 +59,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Lng Range</CardTitle>
-            <MapPin className="text-muted-foreground" />
+            <Icon path={mdiMapMarkerOutline} className="text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-sm font-mono">
@@ -70,7 +71,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Lat Range</CardTitle>
-            <Layers className="text-muted-foreground" />
+            <Icon path={mdiLayers} className="text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-sm font-mono">

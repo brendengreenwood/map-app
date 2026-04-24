@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { Layers, Search, Database } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiLayersOutline, mdiMagnify, mdiDatabase } from '@mdi/js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,10 +12,10 @@ import { fetchFeaturesGeoJSON, bulkInsert, fetchStats, clearFeatures } from '@/l
 
 type TabId = 'layers' | 'search' | 'data';
 
-const tabs: { id: TabId; label: string; icon: typeof Layers }[] = [
-  { id: 'layers', label: 'Layers', icon: Layers },
-  { id: 'search', label: 'Search', icon: Search },
-  { id: 'data', label: 'Data', icon: Database },
+const tabs: { id: TabId; label: string; icon: string }[] = [
+  { id: 'layers', label: 'Layers', icon: mdiLayersOutline },
+  { id: 'search', label: 'Search', icon: mdiMagnify },
+  { id: 'data', label: 'Data', icon: mdiDatabase },
 ];
 
 interface MapBottomTabsProps {
@@ -291,7 +292,7 @@ export function MapBottomTabs({
                     : 'text-muted-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent hover:ring-1 hover:ring-ring/30'
                 }`}
               >
-                <tab.icon className="size-5" />
+                <Icon path={tab.icon} className="size-5" />
                 <span>{tab.label}</span>
               </button>
             </div>

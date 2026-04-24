@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Loader2, Plus } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiArrowLeft, mdiLoading, mdiPlus } from '@mdi/js';
 import { useMap } from '@/hooks/use-map';
 import { useUsers } from '@/hooks/use-users';
 import { MapBottomTabs } from '@/components/map-bottom-tabs';
@@ -218,7 +219,7 @@ export default function MapPage() {
           onTabChange={setActiveTabId}
           leadingAction={
             <Button variant="ghost" size="icon-sm" onClick={closeBidMode}>
-              <ArrowLeft />
+              <Icon path={mdiArrowLeft} />
             </Button>
           }
           inlineAction={
@@ -227,7 +228,7 @@ export default function MapPage() {
               size="sm"
               onClick={addTosWindow}
             >
-              <Plus className="size-4" />
+              <Icon path={mdiPlus} className="size-4" />
               Add TOS
             </Button>
           }
@@ -238,7 +239,7 @@ export default function MapPage() {
               onClick={publishState.save}
               disabled={publishState.disabled}
             >
-              {publishState.saving && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
+              {publishState.saving && <Icon path={mdiLoading} className="mr-1.5 size-3.5 animate-spin" />}
               Publish
             </Button>
           }
@@ -262,7 +263,7 @@ export default function MapPage() {
             className="absolute top-3 left-3 z-30 size-9 rounded-full !bg-card shadow-md hover:!bg-sidebar-accent hover:!text-sidebar-accent-foreground hover:ring-1 hover:ring-ring/30 animate-in fade-in slide-in-from-left-2 duration-200"
             onClick={() => navigate('/')}
           >
-            <ArrowLeft />
+            <Icon path={mdiArrowLeft} />
           </Button>
         )}
 

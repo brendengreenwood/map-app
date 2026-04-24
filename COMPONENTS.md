@@ -7,7 +7,7 @@ This document is the single source of truth for building UI in this project. Any
 - **Framework**: React 19 + TypeScript
 - **Build**: Vite
 - **Styling**: Tailwind CSS v4 + shadcn/ui
-- **Icons**: Lucide React (tree-shakeable, no sizing classes needed)
+- **Icons**: Material Design Icons via `@mdi/js` + `@/components/ui/icon` wrapper (tree-shakeable SVG path strings)
 - **Fonts**: HelveticaNowForCargill → Geist Variable → system-ui
 - **Storybook**: v10.3 for component docs (run `npm run storybook`)
 - **MCP**: `@storybook/addon-mcp` exposes components to agents at `http://localhost:6006/mcp`
@@ -186,34 +186,34 @@ Browser-style folder tab bar for the map view. Supports leading/trailing action 
 ```tsx
 import { MapTabBar, type MapTab } from '@/components/map-tab-bar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Map, Layers } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { mdiArrowLeft, mdiPlus, mdiMap, mdiLayers } from '@mdi/js';
 
 const tabs: MapTab[] = [
-  { id: 'main', label: 'Main Map', icon: Map, closable: false },
-  { id: 'heatmap', label: 'Heatmap', icon: Layers },
+  { id: 'main', label: 'Main Map', icon: mdiMap },
+  { id: 'heatmap', label: 'Heatmap', icon: mdiLayers },
 ];
 
 <MapTabBar
   tabs={tabs}
   activeTabId="main"
   onTabChange={(id) => setActiveId(id)}
-  onTabClose={(id) => removeTab(id)}
   leadingAction={
     <Button variant="ghost" size="icon-sm">
-      <ArrowLeft />
+      <Icon path={mdiArrowLeft} />
     </Button>
   }
   trailingAction={
     <Button variant="ghost" size="icon-sm">
-      <Plus />
+      <Icon path={mdiPlus} />
     </Button>
   }
 />
 ```
 
-**Props**: `tabs` (MapTab[]), `activeTabId`, `onTabChange`, `onTabClose?`, `leadingAction?`, `trailingAction?`
+**Props**: `tabs` (MapTab[]), `activeTabId`, `onTabChange`, `leadingAction?`, `trailingAction?`, `inlineAction?`
 
-**MapTab**: `{ id: string, label: string, icon?: LucideIcon, closable?: boolean }`
+**MapTab**: `{ id: string, label: string, icon?: string }`
 
 ### Data Tables
 
@@ -360,7 +360,7 @@ src/
 2. Add route in `src/App.tsx` wrapped in `<AppShell>`
 3. Add nav item in `src/components/app-shell.tsx` navItems array
 4. Add a story in `src/stories/` if the page has reusable patterns
-5. Use `PageHeader` with an appropriate Lucide icon
+5. Use `PageHeader` with an appropriate MDI icon path from `@mdi/js`
 
 ## Adding a New Component
 

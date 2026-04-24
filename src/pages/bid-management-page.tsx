@@ -17,9 +17,11 @@ import {
   fetchElevators, fetchScenarios, deleteScenario,
   type ElevatorRow, type ScenarioRow,
 } from '@/lib/api';
+import { Icon } from '@/components/ui/icon';
 import {
-  TrendingUp, ChevronsUpDown, ChevronsDownUp, Plus, MapPin, Loader2,
-} from 'lucide-react';
+  mdiChartTimelineVariant, mdiUnfoldMoreHorizontal, mdiUnfoldLessHorizontal,
+  mdiPlus, mdiMapMarkerOutline, mdiLoading,
+} from '@mdi/js';
 
 // ── Contract table for a single elevator ─────────────────
 
@@ -41,7 +43,7 @@ function ContractTable({
   if (scenarios.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <TrendingUp className="mb-2 size-8 opacity-40" />
+        <Icon path={mdiChartTimelineVariant} className="mb-2 size-8 opacity-40" />
         <p className="text-sm">No scenarios for this elevator yet.</p>
         <p className="text-xs">Click "New Scenario" to create one.</p>
       </div>
@@ -182,7 +184,7 @@ export default function BidManagementPage() {
     return (
       <div className="flex flex-col gap-6 p-6">
         <PageHeader
-          icon={TrendingUp}
+          icon={mdiChartTimelineVariant}
           title="Scenarios"
           description="Switch to a merchant user to manage scenarios."
         />
@@ -194,12 +196,12 @@ export default function BidManagementPage() {
     return (
       <div className="flex flex-col gap-6 p-6">
         <PageHeader
-          icon={TrendingUp}
+          icon={mdiChartTimelineVariant}
           title="Scenarios"
           description="Loading scenarios..."
         />
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          <Icon path={mdiLoading} className="size-6 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
@@ -209,7 +211,7 @@ export default function BidManagementPage() {
     return (
       <div className="flex flex-col gap-6 p-6">
         <PageHeader
-          icon={TrendingUp}
+          icon={mdiChartTimelineVariant}
           title="Scenarios"
           description="No elevators assigned to your account. Add elevators in the Admin page first."
         />
@@ -220,21 +222,21 @@ export default function BidManagementPage() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
-        icon={TrendingUp}
+        icon={mdiChartTimelineVariant}
         title="Scenarios"
         description="Manage corn futures contract bids and forward delivery pricing."
       >
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={expandAll}>
-            <ChevronsUpDown data-icon="inline-start" />
+            <Icon path={mdiUnfoldMoreHorizontal} data-icon="inline-start" />
             Expand All
           </Button>
           <Button variant="outline" size="sm" onClick={collapseAll}>
-            <ChevronsDownUp data-icon="inline-start" />
+            <Icon path={mdiUnfoldLessHorizontal} data-icon="inline-start" />
             Collapse All
           </Button>
           <Button size="sm" onClick={openNewScenario}>
-            <Plus data-icon="inline-start" />
+            <Icon path={mdiPlus} data-icon="inline-start" />
             New Scenario
           </Button>
         </div>
@@ -246,7 +248,7 @@ export default function BidManagementPage() {
             <TabsList variant="line">
               {elevators.map((elev) => (
                 <TabsTrigger key={elev.id} value={elev.id} className="gap-1.5">
-                  <MapPin className="size-3.5" />
+                  <Icon path={mdiMapMarkerOutline} className="size-3.5" />
                   {elev.name}
                 </TabsTrigger>
               ))}
