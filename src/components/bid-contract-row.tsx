@@ -37,22 +37,28 @@ export function BidContractRow({
   onReviseWindow,
 }: BidContractRowProps) {
   const windows = scenario.windows ?? [];
+  const isExpandable = windows.length > 0;
 
   return (
     <>
       {/* Contract header row */}
       <TableRow
-        className="cursor-pointer hover:bg-muted/50"
-        onClick={onToggle}
+        className={cn(
+          'hover:bg-muted/50',
+          isExpandable && 'cursor-pointer',
+        )}
+        onClick={isExpandable ? onToggle : undefined}
       >
         <TableCell className="w-8 pl-3 pr-0">
-          <Icon
-            path={mdiChevronDown}
-            className={cn(
-              'size-4 text-muted-foreground transition-transform',
-              expanded && 'rotate-180',
-            )}
-          />
+          {isExpandable && (
+            <Icon
+              path={mdiChevronDown}
+              className={cn(
+                'size-4 text-muted-foreground transition-transform',
+                expanded && 'rotate-180',
+              )}
+            />
+          )}
         </TableCell>
         <TableCell className="font-semibold">
           <div>{scenario.contract_label}</div>

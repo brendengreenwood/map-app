@@ -20,9 +20,8 @@ import { mdiCalendar, mdiLoading, mdiMapMarkerOutline } from '@mdi/js';
 import { cn } from '@/lib/utils';
 import { formatBasis, formatFreight, CORN_CONTRACTS } from '@/lib/bid-data';
 import {
-  createScenario, checkScenarioExists, fetchCompetitorBids,
+  createScenario, checkScenarioExists,
   type ScenarioRow, type ScenarioWindowRow, type ElevatorRow,
-  type CompetitorBidRow,
 } from '@/lib/api';
 import { useUsers } from '@/hooks/use-users';
 import type { TosWindow } from '@/pages/map-page';
@@ -43,12 +42,12 @@ interface BidMapEditorProps {
   tosWindows?: TosWindow[];
   onSave?: () => void;
   onCancel?: () => void;
-  /** Called when competitor bids are loaded so map can render markers */
-  onCompetitorBids?: (bids: CompetitorBidRow[]) => void;
   /** Called to update a TOS window's data */
   onUpdateTosWindow?: (id: string, updates: Partial<TosWindow>) => void;
   /** Exposes save handler + disabled state to parent for external publish button */
   onPublishStateChange?: (state: { save: () => void; disabled: boolean; saving: boolean }) => void;
+  /** Called when selected contract code changes (so competitor panel can fetch bids) */
+  onContractCodeChange?: (code: string | null) => void;
 }
 
 function getWindowPricing(scenario: ScenarioRow, window: ScenarioWindowRow) {
@@ -72,9 +71,9 @@ export function BidMapEditor({
   tosWindows = [],
   onSave,
   onCancel,
-  onCompetitorBids,
   onUpdateTosWindow,
   onPublishStateChange,
+  onContractCodeChange,
 }: BidMapEditorProps) {
   const { activeUser } = useUsers();
   const isCreateMode = mode === 'create';
@@ -84,12 +83,17 @@ export function BidMapEditor({
   // ── Create-mode selections ──
   const [selectedElevatorId, setSelectedElevatorId] = useState('');
   const [selectedContractCode, setSelectedContractCode] = useState('');
-  const [lookbackDate, setLookbackDate] = useState<Date>(() => new Date());
 
   const selectedContract = useMemo(
     () => CORN_CONTRACTS.find((c) => c.code === selectedContractCode),
     [selectedContractCode],
   );
+
+  // Notify parent of current contract code for competitor bids panel
+  const activeContractCode = isCreateMode ? selectedContractCode || null : scenario?.contract_code ?? null;
+  useEffect(() => {
+    onContractCodeChange?.(activeContractCode);
+  }, [activeContractCode]);
 
   // ── Pricing fields ──
   const [posted, setPosted] = useState('');
@@ -97,37 +101,6 @@ export function BidMapEditor({
   const [leeway, setLeeway] = useState('');
   const [increment, setIncrement] = useState('');
   const [freight, setFreight] = useState('');
-
-  // ── Competitor bids ──
-  const [competitorBids, setCompetitorBids] = useState<CompetitorBidRow[]>([]);
-  const [loadingBids, setLoadingBids] = useState(false);
-
-  // Fetch competitor bids when contract + date are selected
-  const contractForBids = isCreateMode ? selectedContractCode : scenario?.contract_code;
-  useEffect(() => {
-    if (!contractForBids) {
-      setCompetitorBids([]);
-      onCompetitorBids?.([]);
-      return;
-    }
-    const dateStr = lookbackDate.toISOString().slice(0, 10);
-    let cancelled = false;
-    setLoadingBids(true);
-    fetchCompetitorBids(contractForBids, dateStr)
-      .then((bids) => {
-        if (cancelled) return;
-        setCompetitorBids(bids);
-        onCompetitorBids?.(bids);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCompetitorBids([]);
-          onCompetitorBids?.([]);
-        }
-      })
-      .finally(() => { if (!cancelled) setLoadingBids(false); });
-    return () => { cancelled = true; };
-  }, [contractForBids, lookbackDate]);
 
   // ── Save state ──
   const [saving, setSaving] = useState(false);
@@ -512,43 +485,10 @@ export function BidMapEditor({
                 </Field>
               </FieldGroup>
 
-              <Separator />
-
-              {/* ── Competitor bids panel ── */}
-              <div className="flex flex-col gap-1.5">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Competitor bids · {lookbackDate.toLocaleDateString()}
-                </div>
-                {loadingBids ? (
-                  <div className="flex h-16 items-center justify-center text-xs text-muted-foreground">
-                    <Icon path={mdiLoading} className="mr-2 size-3 animate-spin" />
-                    Loading bids...
-                  </div>
-                ) : competitorBids.length === 0 ? (
-                  <div className="flex h-16 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
-                    {contractForBids ? 'No competitor bids for this date' : 'Select a contract month'}
-                  </div>
-                ) : (
-                  competitorBids.map((bid) => (
-                    <div
-                      key={bid.id}
-                      className="flex items-center justify-between rounded-sm bg-muted/50 px-2 py-1.5 text-xs"
-                    >
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <Icon path={mdiMapMarkerOutline} className="size-3 shrink-0 text-muted-foreground" />
-                        <span className="truncate">{bid.competitor_name}</span>
-                      </div>
-                      <span className="shrink-0 font-mono text-muted-foreground">
-                        {formatBasis(bid.posted)}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
             </>
           ) : (
             /* ══════════════════════════════════════════════════
-               CONTRACT TAB — selectors + pricing + competitor bids
+               CONTRACT TAB — selectors + pricing
                ══════════════════════════════════════════════════ */
             <>
               {/* ── Create-mode selectors ── */}
@@ -590,32 +530,6 @@ export function BidMapEditor({
                       </Select>
                     </Field>
 
-                    <Field orientation="horizontal">
-                      <FieldLabel className="w-20 shrink-0 text-xs">Lookback</FieldLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={cn(
-                              'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
-                              'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                              !lookbackDate && 'text-muted-foreground',
-                            )}
-                          >
-                            <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
-                            {lookbackDate ? format(lookbackDate, 'PPP') : 'Pick a date'}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={lookbackDate}
-                            onSelect={(d) => d && setLookbackDate(d)}
-                            disabled={(d) => d > new Date()}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </Field>
                   </FieldGroup>
                   <Separator />
                 </>
@@ -683,39 +597,6 @@ export function BidMapEditor({
                 </>
               )}
 
-              {/* ── Lookback date (revise mode) ── */}
-              {!isCreateMode && (
-                <>
-                  <Field orientation="horizontal" className="[&_[data-slot=field-label]]:flex-none">
-                    <FieldLabel className="w-20 shrink-0 text-xs">Lookback</FieldLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className={cn(
-                            'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
-                            'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                            !lookbackDate && 'text-muted-foreground',
-                          )}
-                        >
-                          <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
-                          {lookbackDate ? format(lookbackDate, 'PPP') : 'Pick a date'}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={lookbackDate}
-                          onSelect={(d) => d && setLookbackDate(d)}
-                          disabled={(d) => d > new Date()}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </Field>
-                  <Separator />
-                </>
-              )}
-
               {/* ── Editable pricing fields ── */}
               <FieldGroup className="gap-2 [&_[data-slot=field-label]]:flex-none">
                 <Field orientation="horizontal">
@@ -769,40 +650,6 @@ export function BidMapEditor({
                   />
                 </Field>
               </FieldGroup>
-
-              <Separator />
-
-              {/* ── Competitor bids panel ── */}
-              <div className="flex flex-col gap-1.5">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Competitor bids · {lookbackDate.toLocaleDateString()}
-                </div>
-                {loadingBids ? (
-                  <div className="flex h-16 items-center justify-center text-xs text-muted-foreground">
-                    <Icon path={mdiLoading} className="mr-2 size-3 animate-spin" />
-                    Loading bids...
-                  </div>
-                ) : competitorBids.length === 0 ? (
-                  <div className="flex h-16 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
-                    {contractForBids ? 'No competitor bids for this date' : 'Select a contract month'}
-                  </div>
-                ) : (
-                  competitorBids.map((bid) => (
-                    <div
-                      key={bid.id}
-                      className="flex items-center justify-between rounded-sm bg-muted/50 px-2 py-1.5 text-xs"
-                    >
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <Icon path={mdiMapMarkerOutline} className="size-3 shrink-0 text-muted-foreground" />
-                        <span className="truncate">{bid.competitor_name}</span>
-                      </div>
-                      <span className="shrink-0 font-mono text-muted-foreground">
-                        {formatBasis(bid.posted)}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
 
               {/* ── Propagation info (contract tab with windows) ── */}
               {tosWindows.length > 0 && (

@@ -7,8 +7,9 @@ import { useUsers } from '@/hooks/use-users';
 import { MapBottomTabs } from '@/components/map-bottom-tabs';
 import { MapTabBar, type MapTab } from '@/components/map-tab-bar';
 import { BidMapEditor } from '@/components/bid-map-editor';
+import { CompetitorBidsPanel, type EditableCompetitorBid } from '@/components/competitor-bids-panel';
 import { Button } from '@/components/ui/button';
-import type { ScenarioRow, ElevatorRow, CompetitorBidRow } from '@/lib/api';
+import type { ScenarioRow, ElevatorRow } from '@/lib/api';
 
 // ── State passed via navigate('/map', { state: ... }) ──
 
@@ -163,15 +164,20 @@ export default function MapPage() {
     navigate('/bids', { replace: true });
   }, [navigate, setCompetitorMarkers]);
 
+  // ── Competitor contract code (driven by editor) ──────
+  const [competitorContractCode, setCompetitorContractCode] = useState<string | null>(
+    () => isReviseMode ? scenario?.contract_code ?? null : null,
+  );
+
   const handleCompetitorBids = useCallback(
-    (bids: CompetitorBidRow[]) => {
+    (bids: EditableCompetitorBid[]) => {
       const markers = bids
         .filter((b) => b.competitor_lng != null && b.competitor_lat != null)
         .map((b) => ({
           lng: b.competitor_lng!,
           lat: b.competitor_lat!,
           name: b.competitor_name,
-          posted: b.posted,
+          posted: b.editedPosted ?? b.posted,
         }));
       setCompetitorMarkers(markers);
     },
@@ -280,9 +286,19 @@ export default function MapPage() {
               tosWindows={tosWindows}
               onSave={closeBidMode}
               onCancel={closeBidMode}
-              onCompetitorBids={handleCompetitorBids}
               onUpdateTosWindow={updateTosWindow}
               onPublishStateChange={setPublishState}
+              onContractCodeChange={setCompetitorContractCode}
+            />
+          </div>
+        )}
+
+        {/* ── Floating right-side competitor bids panel (bid mode only) ──── */}
+        {isBidMode && (
+          <div className="absolute top-3 right-3 bottom-3 z-30 w-72 rounded-xl border border-border bg-card shadow-xl overflow-hidden animate-in fade-in slide-in-from-right-3 duration-300">
+            <CompetitorBidsPanel
+              contractCode={competitorContractCode}
+              onBidsChange={handleCompetitorBids}
             />
           </div>
         )}
