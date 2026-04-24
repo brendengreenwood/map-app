@@ -1,11 +1,52 @@
-import express from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
+import { type ZodSchema, ZodError } from 'zod';
 import db from './db.js';
+import { sanitize, sanitizeArray } from './validate.js';
 import {
-  isNonEmptyString, isOptionalString, isOptionalNumber,
-  isValidLng, isValidLat, isOptionalLng, isOptionalLat,
-  isStringArray, sanitize, sanitizeArray,
-} from './validate.js';
+  createFeatureSchema, bulkFeaturesSchema, featureQuerySchema, featureGeoJsonQuerySchema,
+  createUserSchema, updateUserSchema,
+  createElevatorSchema, updateElevatorSchema, elevatorQuerySchema,
+  createAssignmentSchema, deleteAssignmentSchema, assignmentQuerySchema,
+  createProducerSchema, updateProducerSchema, producerQuerySchema,
+  createCompetitorSchema, updateCompetitorSchema,
+  competitorBidQuerySchema,
+  createScenarioSchema, scenarioQuerySchema, scenarioCheckQuerySchema,
+} from './schemas.js';
+
+/** Format Zod errors into a flat list of readable messages */
+function formatZodErrors(error: ZodError): string[] {
+  return error.issues.map((e) => {
+    const path = e.path.length ? `${e.path.join('.')}: ` : '';
+    return `${path}${e.message}`;
+  });
+}
+
+/** Validate req.body against a Zod schema. Returns parsed data or sends 400. */
+function validateBody<T>(schema: ZodSchema<T>) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: 'Validation failed', details: formatZodErrors(result.error) });
+      return;
+    }
+    req.body = result.data;
+    next();
+  };
+}
+
+/** Validate req.query against a Zod schema. Parsed data stored on res.locals.query. */
+function validateQuery<T>(schema: ZodSchema<T>) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.query);
+    if (!result.success) {
+      res.status(400).json({ error: 'Validation failed', details: formatZodErrors(result.error) });
+      return;
+    }
+    res.locals.query = result.data;
+    next();
+  };
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,27 +56,21 @@ app.use(express.json({ limit: '100mb' }));
 
 // ── GET /api/features — query features in a bounding box ──
 
-app.get('/api/features', (req, res) => {
-  const { west, south, east, north, category, limit = '100000', offset = '0' } = req.query;
-
-  const parsedLimit = Math.min(Math.max(0, Number(limit) || 0), 100000);
-  const parsedOffset = Math.max(0, Number(offset) || 0);
+app.get('/api/features', validateQuery(featureQuerySchema), (_req, res) => {
+  const { west, south, east, north, category, limit, offset } = res.locals.query;
 
   let sql = 'SELECT id, lng, lat, name, category, value, properties FROM features';
   const conditions: string[] = [];
   const params: (string | number)[] = [];
 
-  if (west && south && east && north) {
-    const w = Number(west), s = Number(south), e = Number(east), n = Number(north);
-    if ([w, s, e, n].every(Number.isFinite)) {
-      conditions.push('lng >= ? AND lng <= ? AND lat >= ? AND lat <= ?');
-      params.push(w, e, s, n);
-    }
+  if (west !== undefined && south !== undefined && east !== undefined && north !== undefined) {
+    conditions.push('lng >= ? AND lng <= ? AND lat >= ? AND lat <= ?');
+    params.push(west, east, south, north);
   }
 
-  if (category && typeof category === 'string') {
+  if (category) {
     conditions.push('category = ?');
-    params.push(sanitize(String(category)));
+    params.push(sanitize(category));
   }
 
   if (conditions.length) {
@@ -43,7 +78,7 @@ app.get('/api/features', (req, res) => {
   }
 
   sql += ` LIMIT ? OFFSET ?`;
-  params.push(parsedLimit, parsedOffset);
+  params.push(limit, offset);
 
   const rows = db.prepare(sql).all(...params);
   const total = db.prepare(
@@ -55,21 +90,21 @@ app.get('/api/features', (req, res) => {
 
 // ── GET /api/features/geojson — return as GeoJSON FeatureCollection ──
 
-app.get('/api/features/geojson', (req, res) => {
-  const { west, south, east, north, category, limit = '100000' } = req.query;
+app.get('/api/features/geojson', validateQuery(featureGeoJsonQuerySchema), (_req, res) => {
+  const { west, south, east, north, category, limit } = res.locals.query;
 
   let sql = 'SELECT id, lng, lat, name, category, value, properties FROM features';
   const conditions: string[] = [];
   const params: (string | number)[] = [];
 
-  if (west && south && east && north) {
+  if (west !== undefined && south !== undefined && east !== undefined && north !== undefined) {
     conditions.push('lng >= ? AND lng <= ? AND lat >= ? AND lat <= ?');
-    params.push(Number(west), Number(east), Number(south), Number(north));
+    params.push(west, east, south, north);
   }
 
   if (category) {
     conditions.push('category = ?');
-    params.push(String(category));
+    params.push(category);
   }
 
   if (conditions.length) {
@@ -77,7 +112,7 @@ app.get('/api/features/geojson', (req, res) => {
   }
 
   sql += ` LIMIT ?`;
-  params.push(Number(limit));
+  params.push(limit);
 
   const rows = db.prepare(sql).all(...params) as {
     id: number; lng: number; lat: number; name: string | null;
@@ -118,22 +153,15 @@ app.get('/api/features/stats', (_req, res) => {
 
 // ── POST /api/features — insert a single feature ──
 
-app.post('/api/features', (req, res) => {
+app.post('/api/features', validateBody(createFeatureSchema), (req, res) => {
   const { lng, lat, name, category, value, properties } = req.body;
-
-  if (!isValidLng(lng) || !isValidLat(lat)) {
-    return res.status(400).json({ error: 'lng (-180..180) and lat (-90..90) are required numbers' });
-  }
-  if (!isOptionalString(name)) return res.status(400).json({ error: 'name must be a string' });
-  if (!isOptionalString(category)) return res.status(400).json({ error: 'category must be a string' });
-  if (!isOptionalNumber(value)) return res.status(400).json({ error: 'value must be a number' });
 
   const result = db.prepare(
     'INSERT INTO features (lng, lat, name, category, value, properties) VALUES (?, ?, ?, ?, ?, ?)'
   ).run(
     lng, lat,
-    name ? sanitize(name) : null,
-    category ? sanitize(category) : null,
+    name ?? null,
+    category ?? null,
     value ?? null,
     properties ? JSON.stringify(properties) : null,
   );
@@ -159,22 +187,8 @@ const insertMany = db.transaction((features: { lng: number; lat: number; name?: 
   }
 });
 
-app.post('/api/features/bulk', (req, res) => {
+app.post('/api/features/bulk', validateBody(bulkFeaturesSchema), (req, res) => {
   const { features } = req.body;
-
-  if (!Array.isArray(features)) {
-    return res.status(400).json({ error: 'features must be an array' });
-  }
-  if (features.length > 500000) {
-    return res.status(400).json({ error: 'Maximum 500,000 features per bulk insert' });
-  }
-  for (let i = 0; i < features.length; i++) {
-    const f = features[i];
-    if (!isValidLng(f.lng) || !isValidLat(f.lat)) {
-      return res.status(400).json({ error: `Feature at index ${i}: lng/lat are invalid` });
-    }
-  }
-
   insertMany(features);
   res.json({ inserted: features.length });
 });
@@ -224,42 +238,36 @@ app.get('/api/users/:id', (req, res) => {
 
 // ── POST /api/users — create a user ──
 
-app.post('/api/users', (req, res) => {
+app.post('/api/users', validateBody(createUserSchema), (req, res) => {
   const { id, name, types, preferences } = req.body;
-  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
-  if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
-  if (types !== undefined && !isStringArray(types)) return res.status(400).json({ error: 'types must be a string array' });
 
-  const safeName = sanitize(name, 200);
-  const safeTypes = types ? sanitizeArray(types, 10, 50) : [];
+  const safeTypes = types ?? [];
   db.prepare('INSERT INTO users (id, name, types, preferences) VALUES (?, ?, ?, ?)').run(
-    id, safeName, JSON.stringify(safeTypes), JSON.stringify(preferences ?? {})
+    id, name, JSON.stringify(safeTypes), JSON.stringify(preferences ?? {})
   );
-  res.json({ id, name: safeName, types: safeTypes, preferences: preferences ?? {} });
+  res.json({ id, name, types: safeTypes, preferences: preferences ?? {} });
 });
 
 // ── PUT /api/users/:id — update a user ──
 
-app.put('/api/users/:id', (req, res) => {
+app.put('/api/users/:id', validateBody(updateUserSchema), (req, res) => {
   const { name, types, preferences } = req.body;
-  const existing = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id);
+  const id = req.params.id as string;
+  const existing = db.prepare('SELECT id FROM users WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: 'User not found' });
-
-  if (name !== undefined && !isNonEmptyString(name)) return res.status(400).json({ error: 'name must be a non-empty string' });
-  if (types !== undefined && !isStringArray(types)) return res.status(400).json({ error: 'types must be a string array' });
 
   const updates: string[] = [];
   const params: (string)[] = [];
-  if (name !== undefined) { updates.push('name = ?'); params.push(sanitize(name, 200)); }
-  if (types !== undefined) { updates.push('types = ?'); params.push(JSON.stringify(sanitizeArray(types, 10, 50))); }
+  if (name !== undefined) { updates.push('name = ?'); params.push(name); }
+  if (types !== undefined) { updates.push('types = ?'); params.push(JSON.stringify(types)); }
   if (preferences !== undefined) { updates.push('preferences = ?'); params.push(JSON.stringify(preferences)); }
 
   if (updates.length === 0) return res.status(400).json({ error: 'Nothing to update' });
 
-  params.push(req.params.id);
+  params.push(id);
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
 
-  const row = db.prepare('SELECT id, name, types, preferences, created_at FROM users WHERE id = ?').get(req.params.id) as UserDbRow;
+  const row = db.prepare('SELECT id, name, types, preferences, created_at FROM users WHERE id = ?').get(id) as UserDbRow;
   res.json(parseUserRow(row));
 });
 
@@ -288,8 +296,8 @@ interface ElevatorRow {
   created_at: string;
 }
 
-app.get('/api/elevators', (req, res) => {
-  const merchantUserId = req.query.merchant_user_id as string | undefined;
+app.get('/api/elevators', validateQuery(elevatorQuerySchema), (_req, res) => {
+  const merchantUserId = res.locals.query.merchant_user_id as string | undefined;
   let rows: ElevatorRow[];
   if (merchantUserId) {
     rows = db.prepare('SELECT * FROM elevators WHERE merchant_user_id = ? ORDER BY name').all(merchantUserId) as ElevatorRow[];
@@ -304,16 +312,12 @@ app.get('/api/elevators', (req, res) => {
   res.json({ elevators });
 });
 
-app.post('/api/elevators', (req, res) => {
+app.post('/api/elevators', validateBody(createElevatorSchema), (req, res) => {
   const { id, merchant_user_id, name, lng, lat, address, street, city, state, zip, commodities } = req.body;
-  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
-  if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
-  if (!isValidLng(lng) || !isValidLat(lat)) return res.status(400).json({ error: 'Valid lng/lat are required' });
-  if (commodities !== undefined && !isStringArray(commodities)) return res.status(400).json({ error: 'commodities must be a string array' });
 
   db.prepare('INSERT INTO elevators (id, merchant_user_id, name, lng, lat, address, street, city, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-    id, merchant_user_id ?? null, sanitize(name), lng, lat, address ? sanitize(address) : null,
-    street ? sanitize(street) : null, city ? sanitize(city) : null, state ? sanitize(state) : null, zip ? sanitize(zip) : null
+    id, merchant_user_id ?? null, name, lng, lat, address ?? null,
+    street ?? null, city ?? null, state ?? null, zip ?? null
   );
   if (commodities) {
     const safeCommodities = sanitizeArray(commodities);
@@ -325,7 +329,8 @@ app.post('/api/elevators', (req, res) => {
   res.status(201).json({ ...row, commodities: comms });
 });
 
-app.put('/api/elevators/:id', (req, res) => {
+app.put('/api/elevators/:id', validateBody(updateElevatorSchema), (req, res) => {
+  const id = req.params.id as string;
   const { name, lng, lat, address, street, city, state, zip, commodities, merchant_user_id } = req.body;
   const updates: string[] = [];
   const params: (string | number | null)[] = [];
@@ -339,18 +344,18 @@ app.put('/api/elevators/:id', (req, res) => {
   if (state !== undefined) { updates.push('state = ?'); params.push(state); }
   if (zip !== undefined) { updates.push('zip = ?'); params.push(zip); }
   if (updates.length > 0) {
-    params.push(req.params.id);
+    params.push(id);
     db.prepare(`UPDATE elevators SET ${updates.join(', ')} WHERE id = ?`).run(...params);
   }
   if (commodities && Array.isArray(commodities)) {
-    db.prepare('DELETE FROM elevator_commodities WHERE elevator_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM elevator_commodities WHERE elevator_id = ?').run(id);
     const stmt = db.prepare('INSERT INTO elevator_commodities (id, elevator_id, commodity) VALUES (?, ?, ?)');
     for (const c of commodities) {
-      stmt.run(crypto.randomUUID(), req.params.id, c);
+      stmt.run(crypto.randomUUID(), id, c);
     }
   }
-  const row = db.prepare('SELECT * FROM elevators WHERE id = ?').get(req.params.id) as ElevatorRow;
-  const comms = (db.prepare('SELECT commodity FROM elevator_commodities WHERE elevator_id = ?').all(req.params.id) as { commodity: string }[]).map((c) => c.commodity);
+  const row = db.prepare('SELECT * FROM elevators WHERE id = ?').get(id) as ElevatorRow;
+  const comms = (db.prepare('SELECT commodity FROM elevator_commodities WHERE elevator_id = ?').all(id) as { commodity: string }[]).map((c) => c.commodity);
   res.json({ ...row, commodities: comms });
 });
 
@@ -364,9 +369,9 @@ app.delete('/api/elevators/:id', (req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 
 // Get all assignments (optionally filtered by merchant or originator)
-app.get('/api/assignments', (req, res) => {
-  const merchantUserId = req.query.merchant_user_id as string | undefined;
-  const originatorUserId = req.query.originator_user_id as string | undefined;
+app.get('/api/assignments', validateQuery(assignmentQuerySchema), (_req, res) => {
+  const merchantUserId = res.locals.query.merchant_user_id as string | undefined;
+  const originatorUserId = res.locals.query.originator_user_id as string | undefined;
   let rows;
   if (merchantUserId) {
     rows = db.prepare('SELECT * FROM merchant_originators WHERE merchant_user_id = ?').all(merchantUserId);
@@ -379,20 +384,15 @@ app.get('/api/assignments', (req, res) => {
 });
 
 // Assign an originator to a merchant
-app.post('/api/assignments', (req, res) => {
+app.post('/api/assignments', validateBody(createAssignmentSchema), (req, res) => {
   const { merchant_user_id, originator_user_id } = req.body;
-  if (!isNonEmptyString(merchant_user_id)) return res.status(400).json({ error: 'merchant_user_id is required' });
-  if (!isNonEmptyString(originator_user_id)) return res.status(400).json({ error: 'originator_user_id is required' });
   db.prepare('INSERT OR IGNORE INTO merchant_originators (merchant_user_id, originator_user_id) VALUES (?, ?)').run(merchant_user_id, originator_user_id);
   res.status(201).json({ merchant_user_id, originator_user_id });
 });
 
 // Remove an originator from a merchant
-app.delete('/api/assignments', (req, res) => {
+app.delete('/api/assignments', validateBody(deleteAssignmentSchema), (req, res) => {
   const { merchant_user_id, originator_user_id } = req.body;
-  if (!isNonEmptyString(merchant_user_id) || !isNonEmptyString(originator_user_id)) {
-    return res.status(400).json({ error: 'merchant_user_id and originator_user_id are required' });
-  }
   const result = db.prepare('DELETE FROM merchant_originators WHERE merchant_user_id = ? AND originator_user_id = ?').run(merchant_user_id, originator_user_id);
   res.json({ deleted: result.changes });
 });
@@ -446,8 +446,8 @@ function enrichProducer(row: ProducerRow) {
   };
 }
 
-app.get('/api/producers', (req, res) => {
-  const originatorUserId = req.query.originator_user_id as string | undefined;
+app.get('/api/producers', validateQuery(producerQuerySchema), (_req, res) => {
+  const originatorUserId = res.locals.query.originator_user_id as string | undefined;
   let rows: ProducerRow[];
   if (originatorUserId) {
     rows = db.prepare(
@@ -459,23 +459,17 @@ app.get('/api/producers', (req, res) => {
   res.json({ producers: rows.map(enrichProducer) });
 });
 
-app.post('/api/producers', (req, res) => {
+app.post('/api/producers', validateBody(createProducerSchema), (req, res) => {
   const { id, name, business_name, lng, lat, address, street, city, state, zip, commodities, originator_user_ids, locations, elevator_ids } = req.body;
-  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
-  if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
-  if (!isOptionalLng(lng) || !isOptionalLat(lat)) return res.status(400).json({ error: 'Invalid lng/lat' });
-  if (commodities !== undefined && !isStringArray(commodities)) return res.status(400).json({ error: 'commodities must be a string array' });
-  if (originator_user_ids !== undefined && !isStringArray(originator_user_ids)) return res.status(400).json({ error: 'originator_user_ids must be a string array' });
 
   db.prepare('INSERT INTO producers (id, name, business_name, lng, lat, address, street, city, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-    id, sanitize(name), business_name ? sanitize(business_name) : null, lng ?? null, lat ?? null, address ? sanitize(address) : null,
-    street ? sanitize(street) : null, city ? sanitize(city) : null, state ? sanitize(state) : null, zip ? sanitize(zip) : null
+    id, name, business_name ?? null, lng ?? null, lat ?? null, address ?? null,
+    street ?? null, city ?? null, state ?? null, zip ?? null
   );
 
   if (commodities) {
-    const safeCommodities = sanitizeArray(commodities);
     const stmt = db.prepare('INSERT OR IGNORE INTO producer_commodities (id, producer_id, commodity) VALUES (?, ?, ?)');
-    for (const c of safeCommodities) stmt.run(crypto.randomUUID(), id, c);
+    for (const c of commodities) stmt.run(crypto.randomUUID(), id, c);
   }
 
   if (originator_user_ids) {
@@ -483,21 +477,18 @@ app.post('/api/producers', (req, res) => {
     for (const oid of originator_user_ids) stmt.run(id, oid);
   }
 
-  if (locations && Array.isArray(locations)) {
+  if (locations) {
     const stmt = db.prepare('INSERT INTO producer_locations (id, producer_id, name, address, street, city, state, zip, lng, lat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     for (const loc of locations) {
-      if (!isNonEmptyString(loc.name)) continue;
-      if (!isOptionalLng(loc.lng) || !isOptionalLat(loc.lat)) continue;
       stmt.run(
-        loc.id ?? crypto.randomUUID(), id, sanitize(loc.name), loc.address ? sanitize(loc.address) : null,
-        loc.street ? sanitize(loc.street) : null, loc.city ? sanitize(loc.city) : null,
-        loc.state ? sanitize(loc.state) : null, loc.zip ? sanitize(loc.zip) : null,
+        loc.id ?? crypto.randomUUID(), id, loc.name, loc.address ?? null,
+        loc.street ?? null, loc.city ?? null, loc.state ?? null, loc.zip ?? null,
         loc.lng ?? null, loc.lat ?? null
       );
     }
   }
 
-  if (elevator_ids && Array.isArray(elevator_ids)) {
+  if (elevator_ids) {
     const stmt = db.prepare('INSERT OR IGNORE INTO producer_elevators (producer_id, elevator_id) VALUES (?, ?)');
     for (const eid of elevator_ids) stmt.run(id, eid);
   }
@@ -506,7 +497,8 @@ app.post('/api/producers', (req, res) => {
   res.status(201).json(enrichProducer(row));
 });
 
-app.put('/api/producers/:id', (req, res) => {
+app.put('/api/producers/:id', validateBody(updateProducerSchema), (req, res) => {
+  const id = req.params.id as string;
   const { name, business_name, lng, lat, address, street, city, state, zip, commodities, originator_user_ids, locations, elevator_ids } = req.body;
   const updates: string[] = [];
   const params: (string | number | null)[] = [];
@@ -520,36 +512,36 @@ app.put('/api/producers/:id', (req, res) => {
   if (state !== undefined) { updates.push('state = ?'); params.push(state); }
   if (zip !== undefined) { updates.push('zip = ?'); params.push(zip); }
   if (updates.length) {
-    params.push(req.params.id);
+    params.push(id);
     db.prepare(`UPDATE producers SET ${updates.join(', ')} WHERE id = ?`).run(...params);
   }
   if (commodities && Array.isArray(commodities)) {
-    db.prepare('DELETE FROM producer_commodities WHERE producer_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM producer_commodities WHERE producer_id = ?').run(id);
     const stmt = db.prepare('INSERT INTO producer_commodities (id, producer_id, commodity) VALUES (?, ?, ?)');
-    for (const c of commodities) stmt.run(crypto.randomUUID(), req.params.id, c);
+    for (const c of commodities) stmt.run(crypto.randomUUID(), id, c);
   }
   if (originator_user_ids && Array.isArray(originator_user_ids)) {
-    db.prepare('DELETE FROM producer_assignments WHERE producer_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM producer_assignments WHERE producer_id = ?').run(id);
     const stmt = db.prepare('INSERT OR IGNORE INTO producer_assignments (producer_id, originator_user_id) VALUES (?, ?)');
-    for (const oid of originator_user_ids) stmt.run(req.params.id, oid);
+    for (const oid of originator_user_ids) stmt.run(id, oid);
   }
   if (locations && Array.isArray(locations)) {
-    db.prepare('DELETE FROM producer_locations WHERE producer_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM producer_locations WHERE producer_id = ?').run(id);
     const stmt = db.prepare('INSERT INTO producer_locations (id, producer_id, name, address, street, city, state, zip, lng, lat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     for (const loc of locations) {
       stmt.run(
-        loc.id ?? crypto.randomUUID(), req.params.id, loc.name, loc.address ?? null,
+        loc.id ?? crypto.randomUUID(), id, loc.name, loc.address ?? null,
         loc.street ?? null, loc.city ?? null, loc.state ?? null, loc.zip ?? null,
         loc.lng ?? null, loc.lat ?? null
       );
     }
   }
   if (elevator_ids && Array.isArray(elevator_ids)) {
-    db.prepare('DELETE FROM producer_elevators WHERE producer_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM producer_elevators WHERE producer_id = ?').run(id);
     const stmt = db.prepare('INSERT OR IGNORE INTO producer_elevators (producer_id, elevator_id) VALUES (?, ?)');
-    for (const eid of elevator_ids) stmt.run(req.params.id, eid);
+    for (const eid of elevator_ids) stmt.run(id, eid);
   }
-  const row = db.prepare('SELECT * FROM producers WHERE id = ?').get(req.params.id) as ProducerRow;
+  const row = db.prepare('SELECT * FROM producers WHERE id = ?').get(id) as ProducerRow;
   if (!row) return res.status(404).json({ error: 'Producer not found' });
   res.json(enrichProducer(row));
 });
@@ -590,29 +582,25 @@ app.get('/api/competitors', (_req, res) => {
   res.json({ competitors: rows.map(enrichCompetitor) });
 });
 
-app.post('/api/competitors', (req, res) => {
+app.post('/api/competitors', validateBody(createCompetitorSchema), (req, res) => {
   const { id, name, lng, lat, address, street, city, state, zip, commodities } = req.body;
-  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
-  if (!isNonEmptyString(name)) return res.status(400).json({ error: 'name is required' });
-  if (!isOptionalLng(lng) || !isOptionalLat(lat)) return res.status(400).json({ error: 'Invalid lng/lat' });
-  if (commodities !== undefined && !isStringArray(commodities)) return res.status(400).json({ error: 'commodities must be a string array' });
 
   db.prepare('INSERT INTO competitors (id, name, lng, lat, address, street, city, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-    id, sanitize(name), lng ?? null, lat ?? null, address ? sanitize(address) : null,
-    street ? sanitize(street) : null, city ? sanitize(city) : null, state ? sanitize(state) : null, zip ? sanitize(zip) : null
+    id, name, lng ?? null, lat ?? null, address ?? null,
+    street ?? null, city ?? null, state ?? null, zip ?? null
   );
 
   if (commodities) {
-    const safeCommodities = sanitizeArray(commodities);
     const stmt = db.prepare('INSERT OR IGNORE INTO competitor_commodities (id, competitor_id, commodity) VALUES (?, ?, ?)');
-    for (const c of safeCommodities) stmt.run(crypto.randomUUID(), id, c);
+    for (const c of commodities) stmt.run(crypto.randomUUID(), id, c);
   }
 
   const row = db.prepare('SELECT * FROM competitors WHERE id = ?').get(id) as CompetitorRow;
   res.status(201).json(enrichCompetitor(row));
 });
 
-app.put('/api/competitors/:id', (req, res) => {
+app.put('/api/competitors/:id', validateBody(updateCompetitorSchema), (req, res) => {
+  const id = req.params.id as string;
   const { name, lng, lat, address, street, city, state, zip, commodities } = req.body;
   const updates: string[] = [];
   const params: (string | number | null)[] = [];
@@ -625,15 +613,15 @@ app.put('/api/competitors/:id', (req, res) => {
   if (state !== undefined) { updates.push('state = ?'); params.push(state); }
   if (zip !== undefined) { updates.push('zip = ?'); params.push(zip); }
   if (updates.length) {
-    params.push(req.params.id);
+    params.push(id);
     db.prepare(`UPDATE competitors SET ${updates.join(', ')} WHERE id = ?`).run(...params);
   }
   if (commodities && Array.isArray(commodities)) {
-    db.prepare('DELETE FROM competitor_commodities WHERE competitor_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM competitor_commodities WHERE competitor_id = ?').run(id);
     const stmt = db.prepare('INSERT INTO competitor_commodities (id, competitor_id, commodity) VALUES (?, ?, ?)');
-    for (const c of commodities) stmt.run(crypto.randomUUID(), req.params.id, c);
+    for (const c of commodities) stmt.run(crypto.randomUUID(), id, c);
   }
-  const row = db.prepare('SELECT * FROM competitors WHERE id = ?').get(req.params.id) as CompetitorRow;
+  const row = db.prepare('SELECT * FROM competitors WHERE id = ?').get(id) as CompetitorRow;
   if (!row) return res.status(404).json({ error: 'Competitor not found' });
   res.json(enrichCompetitor(row));
 });
@@ -662,13 +650,10 @@ interface EnrichedCompetitorBid extends CompetitorBidRow {
   competitor_lat: number | null;
 }
 
-app.get('/api/competitor-bids', (req, res) => {
-  const { contract_code, date } = req.query;
-  if (!contract_code || typeof contract_code !== 'string') {
-    return res.status(400).json({ error: 'contract_code is required' });
-  }
+app.get('/api/competitor-bids', validateQuery(competitorBidQuerySchema), (_req, res) => {
+  const { contract_code, date } = res.locals.query;
 
-  const bidDate = typeof date === 'string' ? date : new Date().toISOString().slice(0, 10);
+  const bidDate = date ?? new Date().toISOString().slice(0, 10);
 
   const rows = db.prepare(`
     SELECT cb.*, c.name AS competitor_name, c.lng AS competitor_lng, c.lat AS competitor_lat
@@ -726,9 +711,8 @@ function enrichScenario(row: ScenarioRow) {
 }
 
 // GET /api/scenarios — fetch active scenarios for a merchant
-app.get('/api/scenarios', (req, res) => {
-  const merchantUserId = req.query.merchant_user_id as string | undefined;
-  if (!merchantUserId) return res.status(400).json({ error: 'merchant_user_id is required' });
+app.get('/api/scenarios', validateQuery(scenarioQuerySchema), (_req, res) => {
+  const merchantUserId = res.locals.query.merchant_user_id;
 
   const rows = db.prepare(
     'SELECT * FROM scenarios WHERE merchant_user_id = ? AND is_active = 1 ORDER BY contract_code'
@@ -738,11 +722,8 @@ app.get('/api/scenarios', (req, res) => {
 });
 
 // GET /api/scenarios/check — check if an active scenario exists for a combo
-app.get('/api/scenarios/check', (req, res) => {
-  const { merchant_user_id, elevator_id, contract_code } = req.query;
-  if (!merchant_user_id || !elevator_id || !contract_code) {
-    return res.status(400).json({ error: 'merchant_user_id, elevator_id, and contract_code are required' });
-  }
+app.get('/api/scenarios/check', validateQuery(scenarioCheckQuerySchema), (_req, res) => {
+  const { merchant_user_id, elevator_id, contract_code } = res.locals.query;
 
   const row = db.prepare(
     'SELECT * FROM scenarios WHERE merchant_user_id = ? AND elevator_id = ? AND contract_code = ? AND is_active = 1'
@@ -752,22 +733,11 @@ app.get('/api/scenarios/check', (req, res) => {
 });
 
 // POST /api/scenarios — create a new scenario (optionally replacing existing)
-app.post('/api/scenarios', (req, res) => {
+app.post('/api/scenarios', validateBody(createScenarioSchema), (req, res) => {
   const {
     id, merchant_user_id, elevator_id, contract_code, contract_label,
     posted, max, leeway, increment, freight, updated_by, windows, replace,
   } = req.body;
-
-  if (!isNonEmptyString(id)) return res.status(400).json({ error: 'id is required' });
-  if (!isNonEmptyString(merchant_user_id)) return res.status(400).json({ error: 'merchant_user_id is required' });
-  if (!isNonEmptyString(elevator_id)) return res.status(400).json({ error: 'elevator_id is required' });
-  if (!isNonEmptyString(contract_code)) return res.status(400).json({ error: 'contract_code is required' });
-  if (!isNonEmptyString(contract_label)) return res.status(400).json({ error: 'contract_label is required' });
-  if (typeof posted !== 'number') return res.status(400).json({ error: 'posted must be a number' });
-  if (typeof max !== 'number') return res.status(400).json({ error: 'max must be a number' });
-  if (typeof leeway !== 'number') return res.status(400).json({ error: 'leeway must be a number' });
-  if (typeof increment !== 'number') return res.status(400).json({ error: 'increment must be a number' });
-  if (typeof freight !== 'number') return res.status(400).json({ error: 'freight must be a number' });
 
   // Check for existing active scenario for same combo
   const existing = db.prepare(
@@ -790,14 +760,13 @@ app.post('/api/scenarios', (req, res) => {
     ).run(id, merchant_user_id, elevator_id, sanitize(contract_code), sanitize(contract_label), posted, max, leeway, increment, freight, updated_by ? sanitize(updated_by) : null);
 
     // Insert windows
-    if (windows && Array.isArray(windows)) {
+    if (windows) {
       const stmt = db.prepare(
         'INSERT INTO scenario_windows (id, scenario_id, window_code, window_label, is_override, posted, max, leeway, increment, freight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       );
       for (const w of windows) {
-        if (!isNonEmptyString(w.window_code) || !isNonEmptyString(w.window_label)) continue;
         stmt.run(
-          w.id ?? crypto.randomUUID(), id, sanitize(w.window_code), sanitize(w.window_label),
+          w.id ?? crypto.randomUUID(), id, w.window_code, w.window_label,
           w.is_override ? 1 : 0, w.posted ?? null, w.max ?? null, w.leeway ?? null, w.increment ?? null, w.freight ?? null
         );
       }
