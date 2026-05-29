@@ -797,12 +797,16 @@ interface ProducerGeoRow {
   farm_size_acres: number | null;
   commodity: string | null;
   county: string | null;
+  last_spotted_at: string | null;
+  last_contacted_at: string | null;
+  account_type: string | null;
   originator_id: string | null;
   originator_name: string | null;
 }
 
 const PRODUCER_GEO_SELECT =
   'SELECT p.id, p.name, p.lng, p.lat, p.farm_size_acres, p.commodity, p.county, ' +
+  '       p.last_spotted_at, p.last_contacted_at, p.account_type, ' +
   '       pa.originator_user_id AS originator_id, u.name AS originator_name ' +
   '  FROM producers p ' +
   '  LEFT JOIN producer_assignments pa ON pa.producer_id = p.id ' +

@@ -484,6 +484,9 @@ export interface ProducerGeo {
   farm_size_acres: number | null;
   commodity: string | null;
   county: string | null;
+  last_spotted_at: string | null;
+  last_contacted_at: string | null;
+  account_type: 'primary' | 'associated' | null;
   originator_id: string | null;
   originator_name: string | null;
 }

@@ -25,6 +25,8 @@ interface UseMapSelectionOptions {
   mapRef: React.RefObject<maplibregl.Map | null>;
   overlayRef: React.RefObject<HTMLCanvasElement | null>;
   producers: ProducerGeo[];
+  /** When provided, sweeps only commit producers whose id is in this set. */
+  eligibleIds?: Set<string> | null;
   /** Magnetic-mode snap radius in screen pixels. */
   magneticRadiusPx?: number;
 }
@@ -47,6 +49,7 @@ export function useMapSelection({
   mapRef,
   overlayRef,
   producers,
+  eligibleIds = null,
   magneticRadiusPx = 28,
 }: UseMapSelectionOptions) {
   const [tool, setTool] = useState<SelectionTool>('none');
@@ -58,6 +61,8 @@ export function useMapSelection({
   toolRef.current = tool;
   const producersRef = useRef(producers);
   producersRef.current = producers;
+  const eligibleRef = useRef<Set<string> | null>(eligibleIds);
+  eligibleRef.current = eligibleIds;
 
   const clear = useCallback(() => {
     setSelectedIds(new Set());
@@ -245,8 +250,12 @@ export function useMapSelection({
       path = [];
       clearOverlay();
 
-      if (hits.length > 0 && currentTool !== 'none') {
-        commitSelection(hits, {
+      // Intersect with the eligibility set so sweeps never grab dimmed producers.
+      const elig = eligibleRef.current;
+      const eligibleHits = elig === null ? hits : hits.filter((id) => elig.has(id));
+
+      if (eligibleHits.length > 0 && currentTool !== 'none') {
+        commitSelection(eligibleHits, {
           tool: currentTool,
           label,
         });

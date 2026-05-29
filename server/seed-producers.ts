@@ -68,6 +68,29 @@ const COUNTIES = [
 
 const COMMODITIES = ['corn', 'soybeans', 'wheat'] as const;
 
+const NOW_MS = Date.UTC(2026, 4, 29); // Stable "now" for deterministic seeding (May 29, 2026)
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function pickAccountType(rng: () => number): 'primary' | 'associated' {
+  return rng() < 0.7 ? 'primary' : 'associated';
+}
+
+/** ~40% non-null; of those ~37.5% within last 7 days, rest within 8–90 days. */
+function pickLastSpottedAt(rng: () => number): string | null {
+  if (rng() >= 0.4) return null;
+  // ~15/40 = 37.5% of spotters are recent
+  const daysAgo = rng() < 0.375 ? Math.floor(rng() * 7) : 7 + Math.floor(rng() * 83);
+  return new Date(NOW_MS - daysAgo * DAY_MS).toISOString();
+}
+
+/** ~50% non-null; of those ~40% within last 14 days, rest within 15–60 days. */
+function pickLastContactedAt(rng: () => number): string | null {
+  if (rng() >= 0.5) return null;
+  // ~20/50 = 40% of contacted are recent
+  const daysAgo = rng() < 0.4 ? Math.floor(rng() * 14) : 14 + Math.floor(rng() * 46);
+  return new Date(NOW_MS - daysAgo * DAY_MS).toISOString();
+}
+
 /** Sample inside a circle (uniform area), radius in miles → degrees. */
 function sampleInRadius(rng: () => number, lng: number, lat: number, radiusMiles: number) {
   // ~1 degree latitude = 69.0 miles; 1 degree longitude = 69 * cos(lat)
@@ -116,15 +139,16 @@ export function seedDemoProducers(): { inserted: number; total: number } {
     .prepare("SELECT COUNT(*) as n FROM producers WHERE id LIKE 'demo-%'")
     .get() as { n: number };
 
+  const rng = mulberry32(0xC0FFEE);
+
   if (existing.n >= PRODUCER_TARGET) {
+    backfillNewFields();
     return { inserted: 0, total: existing.n };
   }
 
-  const rng = mulberry32(0xC0FFEE);
-
   const insertProducer = db.prepare(
-    'INSERT INTO producers (id, name, business_name, lng, lat, address, street, city, state, zip, farm_size_acres, commodity, county) ' +
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO producers (id, name, business_name, lng, lat, address, street, city, state, zip, farm_size_acres, commodity, county, last_spotted_at, last_contacted_at, account_type) ' +
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   );
 
   const insertMany = db.transaction((rows: number) => {
@@ -138,6 +162,9 @@ export function seedDemoProducers(): { inserted: number; total: number } {
       const county = COUNTIES[Math.floor(rng() * COUNTIES.length)];
       const commodity = COMMODITIES[Math.floor(rng() * COMMODITIES.length)];
       const acres = Math.floor(80 + rng() * 3920); // 80–4000
+      const accountType = pickAccountType(rng);
+      const lastSpotted = pickLastSpottedAt(rng);
+      const lastContacted = pickLastContactedAt(rng);
       const id = `demo-${existing.n + i}`;
       const [city, state] = county.split(', ');
       insertProducer.run(
@@ -153,7 +180,10 @@ export function seedDemoProducers(): { inserted: number; total: number } {
         null,
         acres,
         commodity,
-        county
+        county,
+        lastSpotted,
+        lastContacted,
+        accountType
       );
     }
     return rows;
@@ -163,6 +193,39 @@ export function seedDemoProducers(): { inserted: number; total: number } {
 
   const total = (db.prepare('SELECT COUNT(*) as n FROM producers').get() as { n: number }).n;
   return { inserted: PRODUCER_TARGET - existing.n, total };
+}
+
+/**
+ * One-shot backfill for rows that pre-date the new columns. Uses a deterministic
+ * RNG seeded by the row id so a given producer always gets the same values.
+ */
+function backfillNewFields(): void {
+  const rows = db
+    .prepare(
+      "SELECT id FROM producers WHERE account_type IS NULL OR (last_spotted_at IS NULL AND last_contacted_at IS NULL)"
+    )
+    .all() as { id: string }[];
+  if (rows.length === 0) return;
+
+  const update = db.prepare(
+    'UPDATE producers SET account_type = COALESCE(account_type, ?), last_spotted_at = COALESCE(last_spotted_at, ?), last_contacted_at = COALESCE(last_contacted_at, ?) WHERE id = ?'
+  );
+
+  const tx = db.transaction(() => {
+    for (const { id } of rows) {
+      // Deterministic per-row seed from id string
+      let seed = 0;
+      for (let i = 0; i < id.length; i += 1) {
+        seed = (seed * 31 + id.charCodeAt(i)) | 0;
+      }
+      const rng = mulberry32(seed >>> 0);
+      const accountType = pickAccountType(rng);
+      const lastSpotted = pickLastSpottedAt(rng);
+      const lastContacted = pickLastContactedAt(rng);
+      update.run(accountType, lastSpotted, lastContacted, id);
+    }
+  });
+  tx();
 }
 
 // ── CLI entrypoint ──

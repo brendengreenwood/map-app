@@ -20,7 +20,8 @@ export const CARGILL_SIDNEY: { lng: number; lat: number; name: string } = {
 
 function buildProducerFeatures(
   producers: ProducerGeo[],
-  selectedIds: Set<string>
+  selectedIds: Set<string>,
+  eligibleIds: Set<string> | null
 ): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -35,6 +36,8 @@ function buildProducerFeatures(
         farm_size_acres: p.farm_size_acres ?? 0,
         originator_id: p.originator_id ?? '',
         selected: selectedIds.has(p.id) ? 1 : 0,
+        // null eligibleIds => everything eligible (before filters arrive)
+        eligible: eligibleIds === null || eligibleIds.has(p.id) ? 1 : 0,
       },
     })),
   };
@@ -82,8 +85,18 @@ function addSelectionLayers(map: maplibregl.Map, originators: Originator[]) {
     type: 'circle',
     source: PRODUCER_SRC,
     paint: {
-      'circle-radius': ['case', ['==', ['get', 'selected'], 1], 6, 4],
-      'circle-color': buildCircleColorExpr(originators),
+      'circle-radius': [
+        'case',
+        ['==', ['get', 'selected'], 1], 6,
+        ['==', ['get', 'eligible'], 0], 3,
+        4,
+      ],
+      'circle-color': [
+        'case',
+        ['==', ['get', 'eligible'], 0],
+        '#999999',
+        buildCircleColorExpr(originators),
+      ] as unknown as maplibregl.ExpressionSpecification,
       'circle-stroke-color': [
         'case',
         ['==', ['get', 'selected'], 1],
@@ -92,11 +105,15 @@ function addSelectionLayers(map: maplibregl.Map, originators: Originator[]) {
       ],
       'circle-stroke-width': [
         'case',
-        ['==', ['get', 'selected'], 1],
-        2.5,
+        ['==', ['get', 'selected'], 1], 2.5,
+        ['==', ['get', 'eligible'], 0], 0.5,
         1,
       ],
-      'circle-opacity': 0.92,
+      'circle-opacity': [
+        'case',
+        ['==', ['get', 'eligible'], 0], 0.25,
+        0.92,
+      ],
     },
   });
 
@@ -131,6 +148,7 @@ export function useSelectionMap({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const producersRef = useRef<ProducerGeo[]>([]);
   const selectedRef = useRef<Set<string>>(new Set());
+  const eligibleRef = useRef<Set<string> | null>(null);
   const originatorsRef = useRef<Originator[]>(originators);
   const readyRef = useRef(false);
 
@@ -138,7 +156,9 @@ export function useSelectionMap({
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     const src = map.getSource(PRODUCER_SRC) as maplibregl.GeoJSONSource | undefined;
-    src?.setData(buildProducerFeatures(producersRef.current, selectedRef.current));
+    src?.setData(
+      buildProducerFeatures(producersRef.current, selectedRef.current, eligibleRef.current)
+    );
   }, []);
 
   const refreshFacility = useCallback(() => {
@@ -227,6 +247,14 @@ export function useSelectionMap({
     [refreshProducerData]
   );
 
+  const setEligibleIds = useCallback(
+    (ids: Set<string> | null) => {
+      eligibleRef.current = ids;
+      refreshProducerData();
+    },
+    [refreshProducerData]
+  );
+
   const flyToFacility = useCallback(() => {
     mapRef.current?.flyTo({
       center: [facility.lng, facility.lat],
@@ -239,6 +267,7 @@ export function useSelectionMap({
     mapRef,
     setProducers,
     setSelected,
+    setEligibleIds,
     flyToFacility,
   };
 }

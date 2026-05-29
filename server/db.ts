@@ -68,7 +68,17 @@ if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'commodity')
 if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'county')) {
   db.exec(`ALTER TABLE producers ADD COLUMN county TEXT`);
 }
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'last_spotted_at')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN last_spotted_at TEXT`);
+}
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'last_contacted_at')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN last_contacted_at TEXT`);
+}
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'account_type')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN account_type TEXT`);
+}
 db.exec(`CREATE INDEX IF NOT EXISTS idx_producers_coords ON producers(lng, lat)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_producers_account_type ON producers(account_type)`);
 
 // ── Domain tables ──
 

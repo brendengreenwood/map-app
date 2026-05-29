@@ -9,6 +9,8 @@ interface SelectedProducersPanelProps {
   producers: ProducerGeo[];
   onRemove: (id: string) => void;
   originators?: Originator[];
+  /** When provided, rows whose id is not in this set render dimmed with a "filtered" pill. */
+  eligibleIds?: Set<string> | null;
 }
 
 function Swatch({ color }: { color: string }) {
@@ -25,6 +27,7 @@ export function SelectedProducersPanel({
   producers,
   onRemove,
   originators = [],
+  eligibleIds = null,
 }: SelectedProducersPanelProps) {
   const colorById = useMemo(() => {
     const m = new Map<string, string>();
@@ -106,14 +109,27 @@ export function SelectedProducersPanel({
               const color = p.originator_id
                 ? colorById.get(p.originator_id) ?? UNASSIGNED_COLOR
                 : UNASSIGNED_COLOR;
+              const isFiltered = eligibleIds !== null && !eligibleIds.has(p.id);
               return (
                 <li
                   key={p.id}
-                  className="flex items-start gap-2 px-4 py-2.5 hover:bg-muted/40"
+                  className={
+                    'flex items-start gap-2 px-4 py-2.5 hover:bg-muted/40 ' +
+                    (isFiltered ? 'opacity-60' : '')
+                  }
                 >
-                  <Swatch color={color} />
+                  <span className={isFiltered ? 'opacity-50' : ''}>
+                    <Swatch color={color} />
+                  </span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{p.name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="truncate text-sm font-medium">{p.name}</div>
+                      {isFiltered && (
+                        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Filtered
+                        </span>
+                      )}
+                    </div>
                     <div className="truncate text-xs text-muted-foreground">
                       {p.county ?? '—'} · {(p.farm_size_acres ?? 0).toLocaleString()} ac ·{' '}
                       {p.commodity ?? 'Unknown'} · {p.originator_name ?? 'Unassigned'}
