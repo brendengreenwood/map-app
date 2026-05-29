@@ -57,6 +57,29 @@ for (const table of addressMigrationTables) {
   }
 }
 
+// Migration: producer demo fields (farm size, primary commodity, county)
+const producerCols = db.prepare("PRAGMA table_info(producers)").all() as { name: string }[];
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'farm_size_acres')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN farm_size_acres INTEGER`);
+}
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'commodity')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN commodity TEXT`);
+}
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'county')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN county TEXT`);
+}
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'last_spotted_at')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN last_spotted_at TEXT`);
+}
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'last_contacted_at')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN last_contacted_at TEXT`);
+}
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'account_type')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN account_type TEXT`);
+}
+db.exec(`CREATE INDEX IF NOT EXISTS idx_producers_coords ON producers(lng, lat)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_producers_account_type ON producers(account_type)`);
+
 // ── Domain tables ──
 
 db.exec(`
