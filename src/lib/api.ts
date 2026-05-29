@@ -473,3 +473,48 @@ export async function createScenario(scenario: {
 export async function deleteScenario(id: string): Promise<{ deleted: number }> {
   return apiFetch(`${API_URL}/api/scenarios/${id}`, { method: 'DELETE' });
 }
+
+// ── Producer geo (lightweight map data) ────────────────────────────
+
+export interface ProducerGeo {
+  id: string;
+  name: string;
+  lng: number;
+  lat: number;
+  farm_size_acres: number | null;
+  commodity: string | null;
+  county: string | null;
+  originator_id: string | null;
+  originator_name: string | null;
+}
+
+export interface Originator {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export async function fetchOriginators(): Promise<Originator[]> {
+  const data = await apiFetch<{ originators: Originator[] }>(`${API_URL}/api/originators`);
+  return data.originators;
+}
+
+export async function fetchProducerGeo(params?: {
+  west?: number; south?: number; east?: number; north?: number; limit?: number;
+}): Promise<{ producers: ProducerGeo[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined) qs.set(k, String(v));
+    }
+  }
+  return apiFetch(`${API_URL}/api/producers/geo?${qs}`);
+}
+
+export async function fetchProducersByIds(ids: string[]): Promise<{ producers: ProducerGeo[] }> {
+  return apiFetch(`${API_URL}/api/producers/by-ids`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+}

@@ -785,6 +785,113 @@ app.delete('/api/scenarios/:id', (req, res) => {
   res.json({ deleted: result.changes });
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// ── PRODUCER GEO (lightweight bbox query for map rendering) ──
+// ═══════════════════════════════════════════════════════════════════
+
+interface ProducerGeoRow {
+  id: string;
+  name: string;
+  lng: number;
+  lat: number;
+  farm_size_acres: number | null;
+  commodity: string | null;
+  county: string | null;
+  originator_id: string | null;
+  originator_name: string | null;
+}
+
+const PRODUCER_GEO_SELECT =
+  'SELECT p.id, p.name, p.lng, p.lat, p.farm_size_acres, p.commodity, p.county, ' +
+  '       pa.originator_user_id AS originator_id, u.name AS originator_name ' +
+  '  FROM producers p ' +
+  '  LEFT JOIN producer_assignments pa ON pa.producer_id = p.id ' +
+  '  LEFT JOIN users u ON u.id = pa.originator_user_id';
+
+app.get('/api/producers/geo', (req, res) => {
+  const { west, south, east, north, limit } = req.query as Record<string, string | undefined>;
+  const lim = Math.min(parseInt(limit ?? '5000', 10) || 5000, 20000);
+
+  let sql = `${PRODUCER_GEO_SELECT} WHERE p.lng IS NOT NULL AND p.lat IS NOT NULL`;
+  const params: number[] = [];
+  if (west && east && south && north) {
+    sql += ' AND p.lng BETWEEN ? AND ? AND p.lat BETWEEN ? AND ?';
+    params.push(parseFloat(west), parseFloat(east), parseFloat(south), parseFloat(north));
+  }
+  sql += ' LIMIT ?';
+  params.push(lim);
+
+  const rows = db.prepare(sql).all(...params) as ProducerGeoRow[];
+  res.json({ producers: rows, total: rows.length });
+});
+
+app.post('/api/producers/by-ids', (req, res) => {
+  const body = req.body as { ids?: unknown };
+  const ids = Array.isArray(body.ids) ? body.ids.filter((id): id is string => typeof id === 'string') : [];
+  if (ids.length === 0) {
+    res.json({ producers: [] });
+    return;
+  }
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db
+    .prepare(`${PRODUCER_GEO_SELECT} WHERE p.id IN (${placeholders})`)
+    .all(...ids) as ProducerGeoRow[];
+  res.json({ producers: rows });
+});
+
+// Originator team list with deterministic palette colors.
+app.get('/api/originators', (_req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT id, name FROM users
+       WHERE EXISTS (
+         SELECT 1 FROM json_each(users.types) WHERE json_each.value = 'originator'
+       )`
+    )
+    .all() as { id: string; name: string }[];
+  const sorted = [...rows].sort((a, b) => a.name.localeCompare(b.name));
+  // Inline palette to avoid pulling in the client lib path on the server.
+  const PALETTE = [
+    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+    '#8c564b', '#e377c2', '#17becf', '#bcbd22', '#7f7f00',
+    '#1abc9c', '#3498db', '#9b59b6', '#e74c3c', '#34495e',
+  ];
+  const originators = sorted.map((o, i) => ({
+    id: o.id,
+    name: o.name,
+    color: PALETTE[i % PALETTE.length],
+  }));
+  res.json({ originators });
+});
+
+// Auto-seed demo producers on boot (idempotent)
+import('./seed-producers.js').then(({ ensureCargillSidney, seedDemoProducers }) => {
+  try {
+    const { created } = ensureCargillSidney();
+    if (created) console.log('Seeded Cargill Sidney elevator');
+    const { inserted, total } = seedDemoProducers();
+    if (inserted > 0) console.log(`Seeded ${inserted} demo producers (total ${total})`);
+  } catch (err) {
+    console.warn('Producer seed skipped:', err);
+  }
+
+  // Assign producers to originator territories after producers exist.
+  import('./seed-originators.js')
+    .then(({ seedOriginatorTerritories }) => {
+      try {
+        const { assigned, totalProducers, originators, skipped } = seedOriginatorTerritories();
+        if (!skipped) {
+          console.log(
+            `Seeded originator territories: ${assigned} of ${totalProducers} producers across ${originators} originators`
+          );
+        }
+      } catch (err) {
+        console.warn('Originator territory seed skipped:', err);
+      }
+    })
+    .catch((err) => console.warn('Originator territory module failed to load:', err));
+});
+
 app.listen(PORT, () => {
   console.log(`API server running at http://localhost:${PORT}`);
 });

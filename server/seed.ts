@@ -35,6 +35,8 @@ const originatorUsers = [
   { id: uuid(), name: 'Brett Sorensen', types: ['originator'] },
   { id: uuid(), name: 'Amy Patterson', types: ['originator'] },
   { id: uuid(), name: 'Nick Furman', types: ['originator'] },
+  { id: uuid(), name: 'Hannah Lutz', types: ['originator'] },
+  { id: uuid(), name: 'Diego Marquez', types: ['originator'] },
 ];
 
 const allUsers = [adminUser, ...merchantUsers, ...originatorUsers];

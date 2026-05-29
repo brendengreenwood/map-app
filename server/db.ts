@@ -57,6 +57,19 @@ for (const table of addressMigrationTables) {
   }
 }
 
+// Migration: producer demo fields (farm size, primary commodity, county)
+const producerCols = db.prepare("PRAGMA table_info(producers)").all() as { name: string }[];
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'farm_size_acres')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN farm_size_acres INTEGER`);
+}
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'commodity')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN commodity TEXT`);
+}
+if (producerCols.length > 0 && !producerCols.some((c) => c.name === 'county')) {
+  db.exec(`ALTER TABLE producers ADD COLUMN county TEXT`);
+}
+db.exec(`CREATE INDEX IF NOT EXISTS idx_producers_coords ON producers(lng, lat)`);
+
 // ── Domain tables ──
 
 db.exec(`

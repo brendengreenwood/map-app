@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import {
   mdiMap, mdiViewDashboardOutline, mdiCogOutline, mdiShieldOutline,
   mdiWeatherSunny, mdiWeatherNight, mdiMonitor, mdiBarley, mdiOfficeBuilding,
-  mdiChartTimelineVariant, mdiArrowLeft,
+  mdiChartTimelineVariant, mdiArrowLeft, mdiSelectionDrag,
 } from '@mdi/js';
 import {
   Sidebar,
@@ -29,6 +29,7 @@ import type { Theme } from '@/hooks/use-users';
 const navItems = [
   { title: 'Dashboard', path: '/', icon: mdiViewDashboardOutline },
   { title: 'Map', path: '/map', icon: mdiMap },
+  { title: 'Map Selection', path: '/map/selection', icon: mdiSelectionDrag },
   { title: 'Producers', path: '/producers', icon: mdiBarley },
   { title: 'Competitors', path: '/competitors', icon: mdiOfficeBuilding },
   { title: 'Scenarios', path: '/bids', icon: mdiChartTimelineVariant },
