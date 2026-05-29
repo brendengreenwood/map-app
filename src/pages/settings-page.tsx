@@ -62,7 +62,7 @@ export default function SettingsPage() {
               <Label htmlFor="theme">Theme</Label>
               <Select
                 value={activeUser.preferences.theme}
-                onValueChange={(v) => updatePreferences({ theme: v as Theme })}
+                onValueChange={(v) => { if (v) updatePreferences({ theme: v as Theme }); }}
               >
                 <SelectTrigger id="theme" className="w-40">
                   <SelectValue />

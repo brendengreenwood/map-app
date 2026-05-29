@@ -113,7 +113,7 @@ function AdminContent() {
                   </div>
                   <Select
                     value={getAssignedMerchant(originator.id)}
-                    onValueChange={(v) => handleOriginatorAssign(originator.id, v)}
+                    onValueChange={(v) => handleOriginatorAssign(originator.id, v ?? '')}
                   >
                     <SelectTrigger className="w-48 shrink-0">
                       <SelectValue placeholder="Unassigned" />
@@ -157,7 +157,7 @@ function AdminContent() {
                   </div>
                   <Select
                     value={elevator.merchant_user_id ?? ''}
-                    onValueChange={(v) => handleElevatorAssign(elevator.id, v)}
+                    onValueChange={(v) => handleElevatorAssign(elevator.id, v ?? '')}
                   >
                     <SelectTrigger className="w-48 shrink-0">
                       <SelectValue placeholder="Unassigned" />

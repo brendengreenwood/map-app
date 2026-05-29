@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
 
@@ -13,8 +15,7 @@ import {
   InputGroup,
   InputGroupAddon,
 } from "@/components/ui/input-group"
-import { Icon } from "@/components/ui/icon"
-import { mdiMagnify, mdiCheck } from "@mdi/js"
+import { SearchIcon, CheckIcon } from "lucide-react"
 
 function Command({
   className,
@@ -39,11 +40,12 @@ function CommandDialog({
   className,
   showCloseButton = false,
   ...props
-}: React.ComponentProps<typeof Dialog> & {
+}: Omit<React.ComponentProps<typeof Dialog>, "children"> & {
   title?: string
   description?: string
   className?: string
   showCloseButton?: boolean
+  children: React.ReactNode
 }) {
   return (
     <Dialog {...props}>
@@ -80,7 +82,7 @@ function CommandInput({
           {...props}
         />
         <InputGroupAddon>
-          <Icon path={mdiMagnify} className="size-4 shrink-0 opacity-50" />
+          <SearchIcon className="size-4 shrink-0 opacity-50" />
         </InputGroupAddon>
       </InputGroup>
     </div>
@@ -160,7 +162,7 @@ function CommandItem({
       {...props}
     >
       {children}
-      <Icon path={mdiCheck} className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
+      <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
     </CommandPrimitive.Item>
   )
 }

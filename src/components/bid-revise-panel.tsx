@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -55,6 +55,11 @@ export function BidRevisePanel({ contract, open, onClose }: BidRevisePanelProps)
     setCheckedWindows(defaults);
   };
 
+  useEffect(() => {
+    if (open) resetForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, contract?.code]);
+
   const toggleWindow = (code: string) => {
     setCheckedWindows((prev) => {
       const next = new Set(prev);
@@ -71,7 +76,6 @@ export function BidRevisePanel({ contract, open, onClose }: BidRevisePanelProps)
       <SheetContent
         side="right"
         className="w-full sm:max-w-lg"
-        onOpenAutoFocus={() => resetForm()}
       >
         <SheetHeader>
           <SheetTitle>Revise · {contract.label}</SheetTitle>

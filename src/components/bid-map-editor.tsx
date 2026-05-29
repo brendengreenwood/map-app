@@ -351,21 +351,23 @@ export function BidMapEditor({
                 <Field orientation="horizontal">
                   <FieldLabel className="w-20 shrink-0 text-xs">Start</FieldLabel>
                   <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className={cn(
-                          'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
-                          'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          !activeTosWindow?.startDate && 'text-muted-foreground',
-                        )}
-                      >
-                        <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
-                        {activeTosWindow?.startDate
-                          ? format(activeTosWindow.startDate, 'MMM d, yyyy')
-                          : 'Start date'}
-                      </button>
-                    </PopoverTrigger>
+                    <PopoverTrigger
+                      render={
+                        <button
+                          type="button"
+                          className={cn(
+                            'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
+                            'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            !activeTosWindow?.startDate && 'text-muted-foreground',
+                          )}
+                        >
+                          <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
+                          {activeTosWindow?.startDate
+                            ? format(activeTosWindow.startDate, 'MMM d, yyyy')
+                            : 'Start date'}
+                        </button>
+                      }
+                    />
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
@@ -381,21 +383,23 @@ export function BidMapEditor({
                 <Field orientation="horizontal">
                   <FieldLabel className="w-20 shrink-0 text-xs">End</FieldLabel>
                   <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className={cn(
-                          'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
-                          'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          !activeTosWindow?.endDate && 'text-muted-foreground',
-                        )}
-                      >
-                        <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
-                        {activeTosWindow?.endDate
-                          ? format(activeTosWindow.endDate, 'MMM d, yyyy')
-                          : 'End date'}
-                      </button>
-                    </PopoverTrigger>
+                    <PopoverTrigger
+                      render={
+                        <button
+                          type="button"
+                          className={cn(
+                            'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
+                            'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            !activeTosWindow?.endDate && 'text-muted-foreground',
+                          )}
+                        >
+                          <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
+                          {activeTosWindow?.endDate
+                            ? format(activeTosWindow.endDate, 'MMM d, yyyy')
+                            : 'End date'}
+                        </button>
+                      }
+                    />
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
@@ -503,7 +507,7 @@ export function BidMapEditor({
                   <FieldGroup className="gap-2 [&_[data-slot=field-label]]:flex-none">
                     <Field orientation="horizontal">
                       <FieldLabel className="w-20 shrink-0 text-xs">Elevator</FieldLabel>
-                      <Select value={selectedElevatorId} onValueChange={setSelectedElevatorId}>
+                      <Select value={selectedElevatorId} onValueChange={(v) => setSelectedElevatorId(v ?? '')}>
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Select elevator..." />
                         </SelectTrigger>
@@ -522,7 +526,7 @@ export function BidMapEditor({
 
                     <Field orientation="horizontal">
                       <FieldLabel className="w-20 shrink-0 text-xs">Contract</FieldLabel>
-                      <Select value={selectedContractCode} onValueChange={setSelectedContractCode}>
+                      <Select value={selectedContractCode} onValueChange={(v) => setSelectedContractCode(v ?? '')}>
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Select contract..." />
                         </SelectTrigger>
@@ -540,21 +544,23 @@ export function BidMapEditor({
                     <Field orientation="horizontal">
                       <FieldLabel className="w-20 shrink-0 text-xs">Lookback</FieldLabel>
                       <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={cn(
-                              'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
-                              'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                              !lookbackDate && 'text-muted-foreground',
-                            )}
-                          >
-                            <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
-                            {lookbackDate
-                              ? format(lookbackDate, 'MMM d, yyyy')
-                              : 'Pick a date'}
-                          </button>
-                        </PopoverTrigger>
+                        <PopoverTrigger
+                          render={
+                            <button
+                              type="button"
+                              className={cn(
+                                'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
+                                'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                !lookbackDate && 'text-muted-foreground',
+                              )}
+                            >
+                              <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
+                              {lookbackDate
+                                ? format(lookbackDate, 'MMM d, yyyy')
+                                : 'Pick a date'}
+                            </button>
+                          }
+                        />
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
@@ -640,21 +646,23 @@ export function BidMapEditor({
                     <Field orientation="horizontal">
                       <FieldLabel className="w-20 shrink-0 text-xs">Lookback</FieldLabel>
                       <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={cn(
-                              'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
-                              'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                              !lookbackDate && 'text-muted-foreground',
-                            )}
-                          >
-                            <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
-                            {lookbackDate
-                              ? format(lookbackDate, 'MMM d, yyyy')
-                              : 'Pick a date'}
-                          </button>
-                        </PopoverTrigger>
+                        <PopoverTrigger
+                          render={
+                            <button
+                              type="button"
+                              className={cn(
+                                'flex h-8 flex-1 items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors',
+                                'hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                !lookbackDate && 'text-muted-foreground',
+                              )}
+                            >
+                              <Icon path={mdiCalendar} className="size-3.5 text-muted-foreground" />
+                              {lookbackDate
+                                ? format(lookbackDate, 'MMM d, yyyy')
+                                : 'Pick a date'}
+                            </button>
+                          }
+                        />
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"

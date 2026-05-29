@@ -1,9 +1,10 @@
-import { NavLink, Outlet, useLocation, useMatch } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { Icon } from '@/components/ui/icon';
+import { Button } from '@/components/ui/button';
 import {
   mdiMap, mdiViewDashboardOutline, mdiCogOutline, mdiShieldOutline,
   mdiWeatherSunny, mdiWeatherNight, mdiMonitor, mdiBarley, mdiOfficeBuilding,
-  mdiChartTimelineVariant,
+  mdiChartTimelineVariant, mdiArrowLeft,
 } from '@mdi/js';
 import {
   Sidebar,
@@ -56,16 +57,43 @@ function ThemeToggle() {
   );
 }
 
+function BackButton() {
+  const navigate = useNavigate();
+  // Re-evaluate on every location change so the disabled state stays in sync.
+  useLocation();
+  // history.state.idx is maintained by react-router; 0 means no prior entry.
+  const idx = (window.history.state && typeof window.history.state.idx === 'number')
+    ? window.history.state.idx
+    : 0;
+  const canGoBack = idx > 0;
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="size-7"
+      aria-label="Back"
+      disabled={!canGoBack}
+      onClick={() => navigate(-1)}
+    >
+      <Icon path={mdiArrowLeft} />
+    </Button>
+  );
+}
+
 function NavItem({ item }: { item: typeof navItems[number] }) {
   const match = useMatch(item.path === '/' ? '/' : `${item.path}/*`);
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={!!match} tooltip={item.title}>
-        <NavLink to={item.path}>
-          <Icon path={item.icon} />
-          <span>{item.title}</span>
-        </NavLink>
-      </SidebarMenuButton>
+      <SidebarMenuButton
+        render={
+          <NavLink to={item.path}>
+            <Icon path={item.icon} />
+            <span>{item.title}</span>
+          </NavLink>
+        }
+        isActive={!!match}
+        tooltip={item.title}
+      />
     </SidebarMenuItem>
   );
 }
@@ -82,12 +110,16 @@ export function AppShell() {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="default" asChild tooltip="Map App">
-                <NavLink to="/">
-                  <Icon path={mdiMap} className="!size-5 -ml-0.5 text-primary" />
-                  <span className="truncate font-semibold group-data-[collapsible=icon]:hidden">Map App</span>
-                </NavLink>
-              </SidebarMenuButton>
+              <SidebarMenuButton
+                size="default"
+                tooltip="Map App"
+                render={
+                  <NavLink to="/">
+                    <Icon path={mdiMap} className="!size-5 -ml-0.5 text-primary" />
+                    <span className="truncate font-semibold group-data-[collapsible=icon]:hidden">Map App</span>
+                  </NavLink>
+                }
+              />
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
@@ -126,6 +158,7 @@ export function AppShell() {
         {/* Top bar — only shows trigger + breadcrumb on desktop */}
         <header className="flex h-10 shrink-0 items-center gap-2 border-b px-3 md:h-12 animate-in slide-in-from-top duration-300">
           <SidebarTrigger className="-ml-1" />
+          <BackButton />
           <span className="text-sm font-medium text-muted-foreground">Map App</span>
         </header>
 

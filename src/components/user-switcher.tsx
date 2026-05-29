@@ -135,26 +135,28 @@ export function UserSwitcher() {
   return (
     <>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-        <PopoverTrigger asChild>
-          <SidebarMenuButton
-            size="lg"
-            tooltip={activeUser.name}
-            className="data-[state=open]:bg-sidebar-accent"
-          >
-            <Avatar size="sm">
-              <AvatarFallback className={cn(getColor(activeUser.id), "text-white text-[10px]")}>
-                {getInitials(activeUser.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="flex items-center gap-1.5 truncate font-medium">
-                {activeUser.name}
-                <TypeBadges types={activeUser.types} />
-              </span>
-            </div>
-            <Icon path={mdiUnfoldMoreHorizontal} className="ml-auto" />
-          </SidebarMenuButton>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <SidebarMenuButton
+              size="lg"
+              tooltip={activeUser.name}
+              className="data-[state=open]:bg-sidebar-accent"
+            >
+              <Avatar size="sm">
+                <AvatarFallback className={cn(getColor(activeUser.id), "text-white text-[10px]")}>
+                  {getInitials(activeUser.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="flex items-center gap-1.5 truncate font-medium">
+                  {activeUser.name}
+                  <TypeBadges types={activeUser.types} />
+                </span>
+              </div>
+              <Icon path={mdiUnfoldMoreHorizontal} className="ml-auto" />
+            </SidebarMenuButton>
+          }
+        />
         <PopoverContent
           className="w-64 p-0"
           align="start"
