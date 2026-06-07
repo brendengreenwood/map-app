@@ -521,3 +521,68 @@ export async function fetchProducersByIds(ids: string[]): Promise<{ producers: P
     body: JSON.stringify({ ids }),
   });
 }
+
+// ── Configure Market ───────────────────────────────────────────────────────────
+
+/** A competitor as returned by the Configure Market endpoint. */
+export interface ConfigureCompetitor {
+  id: string;
+  name: string;
+  lng: number;
+  lat: number;
+  city: string | null;
+  state: string | null;
+  distance_miles: number;
+  posted: number | null;
+  bid_date: string | null;
+  stale: boolean;
+}
+
+export interface ConfigureCompetitorsResponse {
+  facility: { id: string; name: string; lng: number; lat: number };
+  contract_code: string;
+  lookback_date: string;
+  radius_miles: number;
+  competitors: ConfigureCompetitor[];
+}
+
+/** Fetch competitors near a facility for a contract + lookback date. */
+export async function fetchConfigureCompetitors(params: {
+  elevatorId: string;
+  contractCode: string;
+  date: string;
+  radiusMiles?: number;
+}): Promise<ConfigureCompetitorsResponse> {
+  const qs = new URLSearchParams({
+    elevator_id: params.elevatorId,
+    contract_code: params.contractCode,
+    date: params.date,
+  });
+  if (params.radiusMiles !== undefined) qs.set('radius_miles', String(params.radiusMiles));
+  return apiFetch(`${API_URL}/api/configure/competitors?${qs}`);
+}
+
+/** Authoring state for the Market Setup section. */
+export interface MarketSetup {
+  facilityId: string;
+  commodity: 'corn' | 'soybeans' | 'wheat';
+  contractCode: string;
+  lookbackDate: string;
+}
+
+/** Authoring state for the Pricing Spread section. Bid values in cents. */
+export interface PricingSpread {
+  postedCents: number;
+  maxCents: number;
+  leewayCents: number;
+  /** Distance cost in cents per mile. */
+  distanceCostCentsPerMile: number;
+}
+
+/** One delivered-price polygon emitted by the competitive-zones engine. */
+export interface CompetitiveZone {
+  partyId: string;
+  partyName: string;
+  color: string;
+  polygon: GeoJSON.Polygon;
+}

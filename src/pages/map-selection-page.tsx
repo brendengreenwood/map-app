@@ -15,9 +15,7 @@ import { OriginatorRoutingPanel } from '@/components/originator-routing-panel';
 import { MapSelectionTopBar, type MapSelectionTab } from '@/components/map-selection-top-bar';
 import { fetchProducerGeo, fetchOriginators, type Originator, type ProducerGeo } from '@/lib/api';
 import { eligibleIds as computeEligibleIds } from '@/lib/producer-filters';
-
-const SCENARIO_TITLE = 'Cargill Sidney — Spring 2026 Bid';
-const SCENARIO_ID = 'cargill-sidney-spring-2026';
+import { SCENARIO_ID, SCENARIO_TITLE } from '@/lib/scenario';
 
 export default function MapSelectionPage() {
   const navigate = useNavigate();
@@ -144,7 +142,7 @@ export default function MapSelectionPage() {
 
   const handleTabChange = (tab: MapSelectionTab) => {
     if (tab === 'configure') {
-      navigate('/map');
+      navigate('/map/configure');
     }
   };
 

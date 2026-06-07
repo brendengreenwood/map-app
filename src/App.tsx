@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from '@/components/app-shell';
 import MapPage from '@/pages/map-page';
 import MapSelectionPage from '@/pages/map-selection-page';
+import MapConfigurePage from '@/pages/map-configure-page';
 import DashboardPage from '@/pages/dashboard-page';
 import ProducersPage from '@/pages/producers-page';
 import CompetitorsPage from '@/pages/competitors-page';
@@ -16,6 +17,7 @@ export default function App() {
         {/* Map is immersive — no shell chrome */}
         <Route path="map" element={<MapPage />} />
         <Route path="map/selection" element={<MapSelectionPage />} />
+        <Route path="map/configure" element={<MapConfigurePage />} />
 
         {/* Everything else gets sidebar + top bar */}
         <Route element={<AppShell />}>

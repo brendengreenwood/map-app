@@ -666,6 +666,100 @@ app.get('/api/competitor-bids', validateQuery(competitorBidQuerySchema), (_req, 
   res.json(rows);
 });
 
+// ── /api/configure/competitors — Configure Market view convenience endpoint ──
+// Returns competitors within `radius_miles` of the elevator, each joined to
+// their freshest bid on/before `date` for `contract_code`.
+app.get('/api/configure/competitors', (req, res) => {
+  const elevatorId = String(req.query.elevator_id ?? '');
+  const contractCode = String(req.query.contract_code ?? '');
+  const date = String(req.query.date ?? new Date().toISOString().slice(0, 10));
+  const radiusMiles = Number(req.query.radius_miles ?? 200);
+
+  if (!elevatorId || !contractCode) {
+    res.status(400).json({ error: 'elevator_id and contract_code are required' });
+    return;
+  }
+
+  // Elevators are seeded with UUIDs that change per DB, so resolve by id first
+  // and fall back to a slug-or-name match for the demo facility.
+  let elevator = db
+    .prepare('SELECT id, name, lng, lat FROM elevators WHERE id = ?')
+    .get(elevatorId) as { id: string; name: string; lng: number; lat: number } | undefined;
+  if (!elevator && elevatorId === 'elev-cargill-sidney') {
+    elevator = db
+      .prepare('SELECT id, name, lng, lat FROM elevators WHERE name = ?')
+      .get('Cargill Sidney') as { id: string; name: string; lng: number; lat: number } | undefined;
+  }
+  if (!elevator) {
+    res.status(404).json({ error: 'Elevator not found' });
+    return;
+  }
+
+  const latRad = (elevator.lat * Math.PI) / 180;
+  const dLat = radiusMiles / 69;
+  const dLng = radiusMiles / (69 * Math.max(Math.cos(latRad), 0.01));
+
+  const competitors = db.prepare(`
+    SELECT id, name, lng, lat, city, state
+    FROM competitors
+    WHERE lng IS NOT NULL AND lat IS NOT NULL
+      AND lng BETWEEN ? AND ?
+      AND lat BETWEEN ? AND ?
+  `).all(
+    elevator.lng - dLng, elevator.lng + dLng,
+    elevator.lat - dLat, elevator.lat + dLat,
+  ) as Array<{ id: string; name: string; lng: number; lat: number; city: string | null; state: string | null }>;
+
+  const bidStmt = db.prepare(`
+    SELECT posted, bid_date
+    FROM competitor_bids
+    WHERE competitor_id = ? AND contract_code = ? AND bid_date <= ?
+    ORDER BY bid_date DESC
+    LIMIT 1
+  `);
+
+  function distMiles(aLng: number, aLat: number, bLng: number, bLat: number): number {
+    const R = 3958.8;
+    const phi1 = (aLat * Math.PI) / 180;
+    const phi2 = (bLat * Math.PI) / 180;
+    const dphi = ((bLat - aLat) * Math.PI) / 180;
+    const dlam = ((bLng - aLng) * Math.PI) / 180;
+    const x = Math.sin(dphi / 2) ** 2 + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dlam / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(x));
+  }
+
+  const enriched = competitors
+    .map((c) => {
+      const distance = distMiles(elevator.lng, elevator.lat, c.lng, c.lat);
+      const bid = bidStmt.get(c.id, contractCode, date) as
+        | { posted: number; bid_date: string }
+        | undefined;
+      return {
+        id: c.id,
+        name: c.name,
+        lng: c.lng,
+        lat: c.lat,
+        city: c.city,
+        state: c.state,
+        distance_miles: distance,
+        posted: bid?.posted ?? null,
+        bid_date: bid?.bid_date ?? null,
+        stale: bid ? bid.bid_date < date : true,
+      };
+    })
+    .filter((c) => c.distance_miles <= radiusMiles)
+    .sort((a, b) => a.distance_miles - b.distance_miles);
+
+  res.json({
+    facility: elevator,
+    contract_code: contractCode,
+    lookback_date: date,
+    radius_miles: radiusMiles,
+    competitors: enriched,
+  });
+});
+
+
 // ═══════════════════════════════════════════════════════════════════
 // ── SCENARIOS (merchant bid pricing models) ──
 // ═══════════════════════════════════════════════════════════════════
@@ -894,6 +988,22 @@ import('./seed-producers.js').then(({ ensureCargillSidney, seedDemoProducers }) 
       }
     })
     .catch((err) => console.warn('Originator territory module failed to load:', err));
+
+  // Seed Ohio competitors + bids for the Configure Market view.
+  import('./seed-ohio-competitors.js')
+    .then(({ seedOhioCompetitors }) => {
+      try {
+        const { competitorsInserted, bidsInserted } = seedOhioCompetitors();
+        if (competitorsInserted > 0 || bidsInserted > 0) {
+          console.log(
+            `Seeded Ohio competitors: ${competitorsInserted} competitors, ${bidsInserted} bids`,
+          );
+        }
+      } catch (err) {
+        console.warn('Ohio competitor seed skipped:', err);
+      }
+    })
+    .catch((err) => console.warn('Ohio competitor module failed to load:', err));
 });
 
 app.listen(PORT, () => {
