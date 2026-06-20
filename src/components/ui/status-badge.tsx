@@ -71,7 +71,17 @@ const defaultLabel: Record<string, string> = {
   expired: "Expired",
 }
 
-export type Status = keyof typeof defaultLabel
+export type Status =
+  | "draft"
+  | "pending"
+  | "booked"
+  | "in_transit"
+  | "delivered"
+  | "settled"
+  | "on_hold"
+  | "rejected"
+  | "cancelled"
+  | "expired"
 
 function StatusBadge({
   status = "draft",
