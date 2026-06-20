@@ -16,7 +16,16 @@ const preview: Preview = {
       storySort: {
         order: [
           'Portal',
-          ['Overview', 'Foundations', 'Components', 'Patterns', 'Install'],
+          [
+            'Get started',
+            ['Overview', 'Install & usage'],
+            'Foundations',
+            ['Color', 'Typography', 'Spacing & radius', 'Elevation'],
+            'Components',
+            ['Components', 'Form elements', 'Tables', 'Charts'],
+            'Patterns',
+            ['App shell', 'Dashboard', 'Filtering', 'CRUD patterns', 'Flows'],
+          ],
           'Components',
           'Compositions',
           'Tokens',

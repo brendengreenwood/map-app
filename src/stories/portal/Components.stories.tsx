@@ -1,10 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { ComponentsSection } from "@/components/portal/gallery"
-import { GalleryForms } from "@/components/portal/gallery-forms"
-import { GalleryData } from "@/components/portal/gallery-data"
-import { GalleryOverlays } from "@/components/portal/gallery-overlays"
-import { GalleryNav } from "@/components/portal/gallery-nav"
-import { GalleryMisc } from "@/components/portal/gallery-misc"
+import { FormElementsSection } from "@/components/portal/form-elements"
+import { TablesSection } from "@/components/portal/tables"
+import { ChartsSection } from "@/components/portal/charts"
 
 const meta: Meta = {
   title: "Portal/Components",
@@ -12,9 +10,10 @@ const meta: Meta = {
 }
 export default meta
 
-export const Overview: StoryObj = { render: () => <ComponentsSection /> }
-export const Forms: StoryObj = { render: () => <GalleryForms /> }
-export const Data: StoryObj = { render: () => <GalleryData /> }
-export const Overlays: StoryObj = { render: () => <GalleryOverlays /> }
-export const Navigation: StoryObj = { render: () => <GalleryNav /> }
-export const Misc: StoryObj = { render: () => <GalleryMisc /> }
+export const Components: StoryObj = { render: () => <ComponentsSection /> }
+export const FormElements: StoryObj = {
+  name: "Form elements",
+  render: () => <FormElementsSection />,
+}
+export const Tables: StoryObj = { render: () => <TablesSection /> }
+export const Charts: StoryObj = { render: () => <ChartsSection /> }

@@ -12,7 +12,10 @@ const meta: Meta = {
 }
 export default meta
 
-export const Colors: StoryObj = { render: () => <ColorsSection /> }
+export const Color: StoryObj = { render: () => <ColorsSection /> }
 export const Typography: StoryObj = { render: () => <TypographySection /> }
-export const Spacing: StoryObj = { render: () => <SpacingSection /> }
-export const Shadows: StoryObj = { render: () => <ShadowsSection /> }
+export const SpacingAndRadius: StoryObj = {
+  name: "Spacing & radius",
+  render: () => <SpacingSection />,
+}
+export const Elevation: StoryObj = { render: () => <ShadowsSection /> }
