@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Icon } from '@/components/ui/icon';
 import { mdiLoading } from '@mdi/js';
 import { useUsers } from '@/hooks/use-users';
 import { useConfigureMap } from '@/hooks/use-configure-map';
 import { useScenarioMarket } from '@/hooks/use-scenario-market';
-import { MapSelectionTopBar, type MapSelectionTab } from '@/components/map-selection-top-bar';
+import { MapSelectionTopBar } from '@/components/map-selection-top-bar';
 import { MarketSetupPanel } from '@/components/market-setup-panel';
 import { ConfigureCompetitorsPanel } from '@/components/configure-competitors-panel';
 import {
@@ -33,7 +32,6 @@ function competitorColor(_id: string, index: number): string {
 }
 
 export default function MapConfigurePage() {
-  const navigate = useNavigate();
   const { resolvedTheme } = useUsers();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +41,7 @@ export default function MapConfigurePage() {
   const [zones, setZones] = useState<CompetitiveZone[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCompetitors, setShowCompetitors] = useState(false);
 
   const facility = useMemo(() => {
     // For v1 there's only Cargill Sidney; ready for additional facilities later.
@@ -167,12 +166,6 @@ export default function MapConfigurePage() {
 
   const canMapZones = competitors.length > 0 && market.setup.facilityId !== '';
 
-  const handleTabChange = (tab: MapSelectionTab) => {
-    if (tab === 'select') {
-      navigate('/map/selection');
-    }
-  };
-
   const handleSave = () => {
     toast.success('Market configuration saved', {
       description: `${competitors.length} competitors · ${zones.length} zones mapped.`,
@@ -180,12 +173,10 @@ export default function MapConfigurePage() {
   };
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-background">
       <MapSelectionTopBar
         scenarioTitle={SCENARIO_TITLE}
-        activeTab="configure"
-        onTabChange={handleTabChange}
-        onBack={() => navigate('/')}
+        onArchive={() => toast.message('Scenario archived (placeholder)')}
         onSave={handleSave}
       />
 
@@ -194,20 +185,42 @@ export default function MapConfigurePage() {
         <div className="relative min-w-0 flex-1">
           <div ref={containerRef} className="h-full w-full" />
 
-          {/* Market setup panel — floats top-left */}
+          {/* Floating panel: Market Setup or Competitors (overlay) */}
           <div className="absolute top-4 left-4 z-10">
-            <MarketSetupPanel
-              setup={market.setup}
-              pricing={market.pricing}
-              facilities={FACILITY_OPTIONS}
-              onSetupChange={setSetup}
-              onPricingChange={setPricing}
-              onMapZones={handleMapZones}
-              canMapZones={canMapZones}
-              zonesMapped={zones.length > 0}
-              onClearZones={handleClearZones}
-            />
+            {showCompetitors ? (
+              <div className="w-80 max-h-[calc(100vh-160px)] overflow-hidden rounded-xl border border-border bg-background/95 shadow-md backdrop-blur-sm">
+                <ConfigureCompetitorsPanel
+                  competitors={competitors}
+                  overrides={market.competitorBidOverrides}
+                  loading={loading}
+                  onBidChange={setCompetitorBid}
+                  onFlyTo={flyToCompetitor}
+                />
+              </div>
+            ) : (
+              <MarketSetupPanel
+                setup={market.setup}
+                pricing={market.pricing}
+                facilities={FACILITY_OPTIONS}
+                onSetupChange={setSetup}
+                onPricingChange={setPricing}
+                onMapZones={handleMapZones}
+                canMapZones={canMapZones}
+                zonesMapped={zones.length > 0}
+                onClearZones={handleClearZones}
+              />
+            )}
           </div>
+
+          {/* Competitors toggle pill — floats at top of map, just right of the panel */}
+          <button
+            type="button"
+            onClick={() => setShowCompetitors((v) => !v)}
+            aria-pressed={showCompetitors}
+            className="pointer-events-auto absolute top-4 left-[340px] z-20 inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-md transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {showCompetitors ? '← Market Setup' : `Competitors (${competitors.length})`}
+          </button>
 
           {loading && (
             <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-lg border border-border bg-background/90 px-4 py-2 text-xs text-muted-foreground shadow-md backdrop-blur-sm">
@@ -224,17 +237,6 @@ export default function MapConfigurePage() {
             </div>
           )}
         </div>
-
-        {/* Right rail: competitors panel */}
-        <aside className="hidden w-80 flex-col overflow-hidden border-l border-border md:flex">
-          <ConfigureCompetitorsPanel
-            competitors={competitors}
-            overrides={market.competitorBidOverrides}
-            loading={loading}
-            onBidChange={setCompetitorBid}
-            onFlyTo={flyToCompetitor}
-          />
-        </aside>
       </div>
     </div>
   );

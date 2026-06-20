@@ -1,15 +1,15 @@
 /**
- * Sprout-themed MapLibre styles
+ * Kernel-themed MapLibre styles
  *
  * Provides functions to recolor CartoDB basemap layers via setPaintProperty
- * to match the Sprout design system palette.
+ * to match the Kernel design system palette (see src/index.css).
  */
 
 import type maplibregl from 'maplibre-gl';
 
-// Sprout palette (hex equivalents of the oklch tokens in index.css)
-const SPROUT = {
-  green100: '#e8ebd3',
+// Kernel palette (hex equivalents of the oklch tokens in index.css)
+const KERNEL = {
+  brand100: '#e8ebd3',
   neutral100: '#f1f2ee',
   neutral200: '#e7e8e4',
   neutral300: '#dfe0dc',
@@ -30,20 +30,20 @@ type PaintOverride = { property: string; value: unknown };
 type LayerOverride = { id: string; overrides: PaintOverride[] };
 
 const LIGHT_OVERRIDES: LayerOverride[] = [
-  { id: 'background', overrides: [{ property: 'background-color', value: SPROUT.neutral100 }] },
-  { id: 'water', overrides: [{ property: 'fill-color', value: SPROUT.water }] },
+  { id: 'background', overrides: [{ property: 'background-color', value: KERNEL.neutral100 }] },
+  { id: 'water', overrides: [{ property: 'fill-color', value: KERNEL.water }] },
   { id: 'landcover', overrides: [{ property: 'fill-color', value: 'rgba(210, 230, 200, 0.5)' }] },
   { id: 'park_national_park', overrides: [{ property: 'fill-color', value: 'rgba(210, 230, 200, 0.5)' }] },
   { id: 'park_nature_reserve', overrides: [{ property: 'fill-color', value: 'rgba(210, 230, 200, 0.5)' }] },
-  { id: 'building', overrides: [{ property: 'fill-color', value: SPROUT.neutral300 }] },
-  { id: 'building-top', overrides: [{ property: 'fill-color', value: SPROUT.neutral200 }, { property: 'fill-outline-color', value: SPROUT.neutral300 }] },
+  { id: 'building', overrides: [{ property: 'fill-color', value: KERNEL.neutral300 }] },
+  { id: 'building-top', overrides: [{ property: 'fill-color', value: KERNEL.neutral200 }, { property: 'fill-outline-color', value: KERNEL.neutral300 }] },
 ];
 
 const DARK_OVERRIDES: LayerOverride[] = [
   { id: 'background', overrides: [{ property: 'background-color', value: '#0d0f0e' }] },
-  { id: 'water', overrides: [{ property: 'fill-color', value: SPROUT.waterDark }] },
+  { id: 'water', overrides: [{ property: 'fill-color', value: KERNEL.waterDark }] },
   { id: 'landcover', overrides: [{ property: 'fill-opacity', value: 0 }] },
-  { id: 'landuse', overrides: [{ property: 'fill-color', value: SPROUT.neutral900 }] },
+  { id: 'landuse', overrides: [{ property: 'fill-color', value: KERNEL.neutral900 }] },
   { id: 'landuse_residential', overrides: [{ property: 'fill-opacity', value: 0 }] },
   { id: 'park_national_park', overrides: [{ property: 'fill-color', value: '#2a3328' }] },
   { id: 'park_nature_reserve', overrides: [{ property: 'fill-color', value: '#2a3328' }] },
@@ -52,10 +52,10 @@ const DARK_OVERRIDES: LayerOverride[] = [
 ];
 
 /**
- * Apply Sprout palette overrides to the map's basemap layers.
+ * Apply Kernel palette overrides to the map's basemap layers.
  * Call after the style has loaded.
  */
-export function applySproutTheme(map: maplibregl.Map, theme: 'light' | 'dark') {
+export function applyMapTheme(map: maplibregl.Map, theme: 'light' | 'dark') {
   const overrides = theme === 'light' ? LIGHT_OVERRIDES : DARK_OVERRIDES;
   for (const { id, overrides: props } of overrides) {
     for (const { property, value } of props) {

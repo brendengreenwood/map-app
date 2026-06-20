@@ -219,7 +219,7 @@ export default function MapPage() {
   );
 
   return (
-    <div className="relative flex h-screen w-screen flex-col">
+    <div className="relative flex h-full w-full flex-col">
       {/* ── Tab bar (both create and revise modes) ── */}
       {isBidMode && (
         <MapTabBar

@@ -103,10 +103,12 @@ export function AppShell() {
   const { activeUser } = useUsers();
   const isAdmin = activeUser.types.includes('admin');
   const { pathname } = useLocation();
+  const isMapRoute = pathname === "/map" || pathname.startsWith("/map/");
 
   return (
     <SidebarProvider defaultOpen={false}>
-      {/* Desktop sidebar — slides in from left when returning from map */}
+      {/* Desktop sidebar — hidden on map routes for an immersive view */}
+      {!isMapRoute && (
       <Sidebar collapsible="icon" className="animate-in slide-in-from-left duration-300">
         <SidebarHeader>
           <SidebarMenu>
@@ -153,12 +155,13 @@ export function AppShell() {
 
         <SidebarRail />
       </Sidebar>
+      )}
 
       {/* Main content */}
       <SidebarInset className="flex flex-col overflow-hidden">
         {/* Top bar — only shows trigger + breadcrumb on desktop */}
         <header className="flex h-10 shrink-0 items-center gap-2 border-b px-3 md:h-12 animate-in slide-in-from-top duration-300">
-          <SidebarTrigger className="-ml-1" />
+          {!isMapRoute && <SidebarTrigger className="-ml-1" />}
           <BackButton />
           <span className="text-sm font-medium text-muted-foreground">Map App</span>
         </header>

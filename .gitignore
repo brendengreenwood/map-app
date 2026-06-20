@@ -26,3 +26,6 @@ data/
 *.njsproj
 *.sln
 *.sw?
+
+tmp/
+Kernel UI, powered by shadcn.zip

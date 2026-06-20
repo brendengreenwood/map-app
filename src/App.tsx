@@ -1,8 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/app-shell';
 import MapPage from '@/pages/map-page';
-import MapSelectionPage from '@/pages/map-selection-page';
-import MapConfigurePage from '@/pages/map-configure-page';
+import MapScenarioPage from '@/pages/map-scenario-page';
 import DashboardPage from '@/pages/dashboard-page';
 import ProducersPage from '@/pages/producers-page';
 import CompetitorsPage from '@/pages/competitors-page';
@@ -14,14 +13,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Map is immersive — no shell chrome */}
-        <Route path="map" element={<MapPage />} />
-        <Route path="map/selection" element={<MapSelectionPage />} />
-        <Route path="map/configure" element={<MapConfigurePage />} />
-
-        {/* Everything else gets sidebar + top bar */}
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
+          <Route path="map" element={<MapPage />} />
+          <Route path="map/scenario" element={<MapScenarioPage />} />
+          {/* Legacy routes redirect to the unified scenario screen */}
+          <Route path="map/selection" element={<Navigate to="/map/scenario" replace />} />
+          <Route path="map/configure" element={<Navigate to="/map/scenario" replace />} />
           <Route path="producers" element={<ProducersPage />} />
           <Route path="competitors" element={<CompetitorsPage />} />
           <Route path="bids" element={<BidManagementPage />} />

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { CARTO_URLS, applySproutTheme } from '@/lib/map-styles';
+import { CARTO_URLS, applyMapTheme } from '@/lib/map-styles';
 import type { ResolvedTheme } from '@/hooks/use-users';
 import type { Originator, ProducerGeo } from '@/lib/api';
 import { UNASSIGNED_COLOR } from '@/lib/originator-colors';
@@ -190,7 +190,7 @@ export function useSelectionMap({
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
     map.on('load', () => {
-      applySproutTheme(map, theme);
+      applyMapTheme(map, theme);
       addSelectionLayers(map, originatorsRef.current);
       readyRef.current = true;
       refreshFacility();
@@ -214,7 +214,7 @@ export function useSelectionMap({
     const cartoUrl = theme === 'dark' ? CARTO_URLS.dark : CARTO_URLS.light;
     map.setStyle(cartoUrl);
     map.once('style.load', () => {
-      applySproutTheme(map, theme);
+      applyMapTheme(map, theme);
       addSelectionLayers(map, originatorsRef.current);
       refreshFacility();
       refreshProducerData();
@@ -263,11 +263,29 @@ export function useSelectionMap({
     });
   }, [facility.lng, facility.lat]);
 
+  const setMapPadding = useCallback(
+    (padding: { top?: number; right?: number; bottom?: number; left?: number }) => {
+      const map = mapRef.current;
+      if (!map) return;
+      map.easeTo({
+        padding: {
+          top: padding.top ?? 0,
+          right: padding.right ?? 0,
+          bottom: padding.bottom ?? 0,
+          left: padding.left ?? 0,
+        },
+        duration: 300,
+      });
+    },
+    []
+  );
+
   return {
     mapRef,
     setProducers,
     setSelected,
     setEligibleIds,
     flyToFacility,
+    setMapPadding,
   };
 }

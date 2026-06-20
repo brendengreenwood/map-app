@@ -7,6 +7,7 @@ interface ConfigureCompetitorsPanelProps {
   loading: boolean;
   onBidChange: (competitorId: string, cents: number | null) => void;
   onFlyTo: (competitorId: string) => void;
+  onBack?: () => void;
 }
 
 function effectivePosted(c: ConfigureCompetitor, overrides: Record<string, number>): number | null {
@@ -20,13 +21,26 @@ export function ConfigureCompetitorsPanel({
   loading,
   onBidChange,
   onFlyTo,
+  onBack,
 }: ConfigureCompetitorsPanelProps) {
   const editedCount = Object.keys(overrides).length;
 
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold">Competitors</h2>
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="-ml-1 inline-flex h-6 items-center rounded px-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              aria-label="Back to Market Setup"
+            >
+              ← Back
+            </button>
+          )}
+          <h2 className="text-sm font-semibold">Competitors</h2>
+        </div>
         <p className="mt-0.5 text-xs text-muted-foreground">
           {loading
             ? 'Loading…'

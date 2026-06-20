@@ -1,36 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { Meta, StoryObj } from '@storybook/react';
 
-const PRIMITIVES = {
-  'Greens': [
-    { name: 'green-100', var: '--sprout-green-100', hex: '#eef5e6' },
-    { name: 'green-200', var: '--sprout-green-200', hex: '#8cc63f' },
-    { name: 'green-300', var: '--sprout-green-300', hex: '#4d8c2a' },
-    { name: 'green-400', var: '--sprout-green-400', hex: '#2d5016' },
-    { name: 'green-700', var: '--sprout-green-700', hex: '#1f3b0f' },
-    { name: 'green-800', var: '--sprout-green-800', hex: '#142a09' },
-    { name: 'green-900', var: '--sprout-green-900', hex: '#0b1d04' },
-  ],
-  'Neutrals': [
-    { name: 'neutral-100', var: '--sprout-neutral-100', hex: '#f3f4f1' },
-    { name: 'neutral-200', var: '--sprout-neutral-200', hex: '#e6e7e4' },
-    { name: 'neutral-300', var: '--sprout-neutral-300', hex: '#d9dbd6' },
-    { name: 'neutral-400', var: '--sprout-neutral-400', hex: '#a6aca2' },
-    { name: 'neutral-500', var: '--sprout-neutral-500', hex: '#7c847a' },
-    { name: 'neutral-600', var: '--sprout-neutral-600', hex: '#656e62' },
-    { name: 'neutral-700', var: '--sprout-neutral-700', hex: '#4e564c' },
-    { name: 'neutral-900', var: '--sprout-neutral-900', hex: '#2c3329' },
-    { name: 'neutral-1000', var: '--sprout-neutral-1000', hex: '#1e2520' },
-  ],
-  'Emphasis': [
-    { name: 'ruby-red-100', var: '--sprout-ruby-red-100', hex: '#d94040' },
-    { name: 'ruby-red-500', var: '--sprout-ruby-red-500', hex: '#a3231e' },
-    { name: 'midnight-blue-500', var: '--sprout-midnight-blue-500', hex: '#1a2a60' },
-    { name: 'sky-blue-500', var: '--sprout-sky-blue-500', hex: '#89cff0' },
-    { name: 'bright-yellow-500', var: '--sprout-bright-yellow-500', hex: '#c8a516' },
-    { name: 'vibrant-purple-500', var: '--sprout-vibrant-purple-500', hex: '#7a33d0' },
-    { name: 'vibrant-purple-100', var: '--sprout-vibrant-purple-100', hex: '#c9a5e8' },
-  ],
-};
+const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
+
+const SCALES: { group: string; prefix: string }[] = [
+  { group: 'Brand', prefix: 'brand' },
+  { group: 'Neutral', prefix: 'neutral' },
+  { group: 'Success', prefix: 'success' },
+  { group: 'Warning', prefix: 'warning' },
+  { group: 'Error', prefix: 'error' },
+  { group: 'Info', prefix: 'info' },
+  { group: 'Viz · Crop', prefix: 'viz-crop' },
+  { group: 'Viz · Wheat', prefix: 'viz-wheat' },
+  { group: 'Viz · Clay', prefix: 'viz-clay' },
+  { group: 'Viz · Sky', prefix: 'viz-sky' },
+  { group: 'Viz · Plum', prefix: 'viz-plum' },
+  { group: 'Viz · Teal', prefix: 'viz-teal' },
+  { group: 'Viz · Rust', prefix: 'viz-rust' },
+  { group: 'Viz · Slate', prefix: 'viz-slate' },
+];
 
 const SEMANTIC = [
   { name: 'background', var: '--background', usage: 'Page background' },
@@ -51,45 +38,69 @@ const SEMANTIC = [
   { name: 'ring', var: '--ring', usage: 'Focus rings' },
 ];
 
-function ColorSwatch({ name, cssVar, label }: { name: string; cssVar: string; label?: string }) {
+const STATUSES = [
+  'draft',
+  'pending',
+  'booked',
+  'intransit',
+  'delivered',
+  'settled',
+  'onhold',
+  'rejected',
+  'cancelled',
+  'expired',
+];
+
+function ScaleSwatch({ cssVar, step }: { cssVar: string; step: number }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: 8,
+          height: 56,
+          borderRadius: 6,
           background: `var(${cssVar})`,
           border: '1px solid var(--border)',
-          flexShrink: 0,
         }}
       />
-      <div>
-        <div style={{ fontWeight: 600, fontSize: 13 }}>{name}</div>
-        <code style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{cssVar}</code>
-        {label && <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{label}</div>}
-      </div>
+      <div style={{ fontSize: 11, fontWeight: 600 }}>{step}</div>
+      <code style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{cssVar}</code>
     </div>
   );
 }
 
-function PrimitiveColors() {
+function Scales() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32, padding: 16, fontFamily: 'var(--font-sans)' }}>
       <div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Sprout Primitive Colors</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Kernel Color Scales</h1>
         <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
-          Core palette tokens from the Sprout design system. These are never used directly in components — they feed the semantic tokens.
+          Every color family is a full 50→950 ramp. Reach for these scale steps when
+          building semantic tokens or one-off accents; never reference brand or viz
+          scales directly inside components.
         </p>
       </div>
-      {Object.entries(PRIMITIVES).map(([group, colors]) => (
-        <div key={group}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+      {SCALES.map(({ group, prefix }) => (
+        <div key={prefix}>
+          <h2
+            style={{
+              fontSize: 16,
+              fontWeight: 600,
+              marginBottom: 12,
+              borderBottom: '1px solid var(--border)',
+              paddingBottom: 8,
+            }}
+          >
             {group}
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 8 }}>
-            {colors.map((c) => (
-              <ColorSwatch key={c.name} name={c.name} cssVar={c.var} label={c.hex} />
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))',
+              gap: 8,
+            }}
+          >
+            {STEPS.map((step) => (
+              <ScaleSwatch key={step} cssVar={`--${prefix}-${step}`} step={step} />
             ))}
           </div>
         </div>
@@ -104,12 +115,62 @@ function SemanticColors() {
       <div>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Semantic Color Tokens</h1>
         <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
-          These tokens map Sprout primitives to functional roles. Use these in components — never reference primitives directly.
+          These tokens map Kernel scale steps to functional roles. Use these in
+          components — never reference scale steps directly.
         </p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
         {SEMANTIC.map((c) => (
-          <ColorSwatch key={c.name} name={c.name} cssVar={c.var} label={c.usage} />
+          <div key={c.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 8,
+                background: `var(${c.var})`,
+                border: '1px solid var(--border)',
+                flexShrink: 0,
+              }}
+            />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</div>
+              <code style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{c.var}</code>
+              <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{c.usage}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StatusTokens() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 16, fontFamily: 'var(--font-sans)' }}>
+      <div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Status Tokens</h1>
+        <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
+          Persistent lifecycle state for loads and contracts. Pair with{' '}
+          <code>&lt;StatusBadge status="…"/&gt;</code>.
+        </p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
+        {STATUSES.map((s) => (
+          <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 999,
+                background: `var(--status-${s})`,
+                border: '1px solid var(--border)',
+              }}
+            />
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>{s}</div>
+              <code style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>--status-{s}</code>
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -122,10 +183,17 @@ const meta: Meta = {
 
 export default meta;
 
-export const Primitives: StoryObj = {
-  render: () => <PrimitiveColors />,
+type Story = StoryObj;
+
+export const Scales_: Story = {
+  name: 'Scales (50→950)',
+  render: () => <Scales />,
 };
 
-export const Semantic: StoryObj = {
+export const Semantic: Story = {
   render: () => <SemanticColors />,
+};
+
+export const Status: Story = {
+  render: () => <StatusTokens />,
 };

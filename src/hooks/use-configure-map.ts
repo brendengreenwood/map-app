@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { CARTO_URLS, applySproutTheme } from '@/lib/map-styles';
+import { CARTO_URLS, applyMapTheme } from '@/lib/map-styles';
 import type { ResolvedTheme } from '@/hooks/use-users';
 import type { CompetitiveZone, ConfigureCompetitor } from '@/lib/api';
 
@@ -194,7 +194,7 @@ export function useConfigureMap({ containerRef, theme, facility }: UseConfigureM
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
     map.on('load', () => {
-      applySproutTheme(map, theme);
+      applyMapTheme(map, theme);
       addLayers(map);
       readyRef.current = true;
       refreshFacility();
@@ -217,7 +217,7 @@ export function useConfigureMap({ containerRef, theme, facility }: UseConfigureM
     const cartoUrl = theme === 'dark' ? CARTO_URLS.dark : CARTO_URLS.light;
     map.setStyle(cartoUrl);
     map.once('style.load', () => {
-      applySproutTheme(map, theme);
+      applyMapTheme(map, theme);
       addLayers(map);
       refreshFacility();
       refreshCompetitors();
@@ -254,5 +254,22 @@ export function useConfigureMap({ containerRef, theme, facility }: UseConfigureM
     mapRef.current?.flyTo({ center: [c.lng, c.lat], zoom: 10, essential: true });
   }, []);
 
-  return { mapRef, setCompetitors, setZones, flyToCompetitor };
+  const setMapPadding = useCallback(
+    (padding: { top?: number; right?: number; bottom?: number; left?: number }) => {
+      const map = mapRef.current;
+      if (!map) return;
+      map.easeTo({
+        padding: {
+          top: padding.top ?? 0,
+          right: padding.right ?? 0,
+          bottom: padding.bottom ?? 0,
+          left: padding.left ?? 0,
+        },
+        duration: 300,
+      });
+    },
+    []
+  );
+
+  return { mapRef, setCompetitors, setZones, flyToCompetitor, setMapPadding };
 }

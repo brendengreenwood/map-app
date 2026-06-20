@@ -63,7 +63,7 @@ export function MarketSetupPanel({
   const distanceId = useId();
 
   return (
-    <div className="w-80 rounded-xl border border-border bg-background/95 p-4 shadow-md backdrop-blur-sm">
+    <div className="flex h-full w-full flex-col overflow-y-auto p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold">Market Setup</h2>
       </div>

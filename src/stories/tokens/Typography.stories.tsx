@@ -6,7 +6,7 @@ function TypographyScale() {
       <div>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Typography</h1>
         <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
-          Font stack: HelveticaNowForCargill → Geist Variable → system-ui. Tailwind utility classes for sizing.
+          Font stack: native system UI stack (no web fonts). Tailwind utility classes for sizing.
         </p>
       </div>
 

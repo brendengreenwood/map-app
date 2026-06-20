@@ -1,24 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Icon } from '@/components/ui/icon';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mdiLoading } from '@mdi/js';
 import { useUsers } from '@/hooks/use-users';
 import { useSelectionMap, CARGILL_SIDNEY } from '@/hooks/use-selection-map';
-import { useMapSelection } from '@/hooks/use-map-selection';
-import { useScenarioFilters } from '@/hooks/use-scenario-filters';
-import { MapSelectionToolbar } from '@/components/map-selection-toolbar';
-import { SelectedProducersPanel } from '@/components/selected-producers-panel';
-import { SelectionLayersPanel } from '@/components/selection-layers-panel';
-import { ProducerFiltersPanel } from '@/components/producer-filters-panel';
-import { OriginatorRoutingPanel } from '@/components/originator-routing-panel';
-import { MapSelectionTopBar, type MapSelectionTab } from '@/components/map-selection-top-bar';
+import { useMapSelection, type PushZone } from '@/hooks/use-map-selection';
+import { useScenarioSelection } from '@/hooks/use-scenario-selection';
+import { ProducerSelectionPanel } from '@/components/producer-selection/producer-selection-panel';
+import { MapSelectionTopBar } from '@/components/map-selection-top-bar';
+import { CollapsibleRightPanel } from '@/components/collapsible-right-panel';
 import { fetchProducerGeo, fetchOriginators, type Originator, type ProducerGeo } from '@/lib/api';
-import { eligibleIds as computeEligibleIds } from '@/lib/producer-filters';
 import { SCENARIO_ID, SCENARIO_TITLE } from '@/lib/scenario';
 
+type PanelTab = 'producers' | 'originators';
+
 export default function MapSelectionPage() {
-  const navigate = useNavigate();
   const { resolvedTheme } = useUsers();
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -27,31 +24,36 @@ export default function MapSelectionPage() {
   const [originators, setOriginators] = useState<Originator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [panelTab, setPanelTab] = useState<PanelTab>('producers');
+  const [panelOpen, setPanelOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.localStorage.getItem('mapSelection.panelOpen') !== 'false';
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('mapSelection.panelOpen', String(panelOpen));
+    } catch {
+      /* ignore quota / disabled storage */
+    }
+  }, [panelOpen]);
 
   const {
+    pushZones,
     filters,
-    toggleAccountType,
-    setSpottedWindow,
-    setContactedWindow,
-    toggleOriginator,
-    selectAllOriginators,
-    clearAllOriginators,
-    hydrated,
-  } = useScenarioFilters(SCENARIO_ID);
-
-  // Compute eligible ids — recomputed whenever producers or filters change.
-  // `now` recomputed only with these deps; day-level cutoffs make a fresh Date safe.
-  const eligibleIds = useMemo(
-    () => computeEligibleIds(producers, filters, new Date()),
-    [producers, filters]
-  );
+    addPushZone,
+    removePushZone,
+    addFilter,
+    updateFilter,
+    removeFilter,
+  } = useScenarioSelection(SCENARIO_ID);
 
   const {
     mapRef,
     setProducers: setMapProducers,
     setSelected,
-    setEligibleIds,
     flyToFacility,
+    setMapPadding,
   } = useSelectionMap({
     containerRef,
     theme: resolvedTheme,
@@ -59,23 +61,35 @@ export default function MapSelectionPage() {
     originators,
   });
 
-  const {
-    tool,
-    setTool,
-    selectedIds,
-    selectedProducers,
-    layers,
-    clear,
-    removeLayer,
-    removeProducer,
-  } = useMapSelection({
+  const handlePushZoneDrawn = useCallback(
+    (zone: PushZone) => {
+      addPushZone(zone);
+    },
+    [addPushZone]
+  );
+
+  const { tool, setTool, isDrawing, seedCounter } = useMapSelection({
     mapRef,
     overlayRef,
     producers,
-    eligibleIds,
+    onPushZoneDrawn: handlePushZoneDrawn,
   });
 
-  // Fetch producers + originators once
+  // Keep zone label numbering monotonic across reloads.
+  useEffect(() => {
+    if (pushZones.length === 0) return;
+    let maxIndex = 0;
+    for (const z of pushZones) {
+      const m = z.label.match(/#(\d+)$/);
+      if (m) {
+        const n = Number(m[1]);
+        if (Number.isFinite(n) && n > maxIndex) maxIndex = n;
+      }
+    }
+    seedCounter(maxIndex);
+  }, [pushZones, seedCounter]);
+
+  // Fetch producers + originators once.
   useEffect(() => {
     let cancelled = false;
     Promise.all([fetchProducerGeo({ limit: 5000 }), fetchOriginators()])
@@ -85,6 +99,7 @@ export default function MapSelectionPage() {
         setOriginators(origs);
         setMapProducers(geo.producers);
         setLoading(false);
+        setMapPadding({ right: panelOpen ? 384 : 0 });
         setTimeout(flyToFacility, 200);
       })
       .catch((err) => {
@@ -97,68 +112,43 @@ export default function MapSelectionPage() {
     };
   }, [setMapProducers, flyToFacility]);
 
-  // First time we have originators and nothing persisted, seed all-checked.
+  // Keep map padding in sync with the collapsible right panel so flyTo /
+  // fitBounds frame content in the visible area, not the full canvas.
   useEffect(() => {
-    if (originators.length === 0) return;
-    if (hydrated) return;
-    if (filters.enabledOriginatorIds.size > 0) return;
-    selectAllOriginators(originators.map((o) => o.id));
-  }, [originators, hydrated, filters.enabledOriginatorIds, selectAllOriginators]);
+    if (loading) return;
+    setMapPadding({ right: panelOpen ? 384 : 0 });
+  }, [loading, panelOpen, setMapPadding]);
 
-  // Sync selection state to map
-  useEffect(() => {
-    setSelected(selectedIds);
-  }, [selectedIds, setSelected]);
+  const handleSelectionChange = useCallback(
+    (finalIds: Set<string>) => {
+      setSelected(finalIds);
+    },
+    [setSelected]
+  );
 
-  // Sync eligibility set to map paint
-  useEffect(() => {
-    setEligibleIds(eligibleIds);
-  }, [eligibleIds, setEligibleIds]);
-
-  // Producer counts per originator (for routing panel).
-  const producerCountsByOriginator = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const p of producers) {
-      if (!p.originator_id) continue;
-      m.set(p.originator_id, (m.get(p.originator_id) ?? 0) + 1);
-    }
-    return m;
-  }, [producers]);
-
-  // Count of producers eligible by current originator filter alone — informational.
-  const visibleByOriginatorCount = useMemo(() => {
-    let n = 0;
-    for (const p of producers) {
-      if (p.originator_id == null) {
-        n += 1;
-        continue;
-      }
-      if (filters.enabledOriginatorIds.has(p.originator_id)) n += 1;
-    }
-    return n;
-  }, [producers, filters.enabledOriginatorIds]);
+  const handleDrawPushZone = useCallback(() => {
+    setTool('push_zone');
+  }, [setTool]);
 
   const overlayPointerEvents = tool === 'none' ? 'none' : 'auto';
 
-  const handleTabChange = (tab: MapSelectionTab) => {
-    if (tab === 'configure') {
-      navigate('/map/configure');
-    }
+  const handleArchive = () => {
+    toast.message('Scenario archived', {
+      description: 'Archive flow is a placeholder until the backend lands.',
+    });
   };
 
   const handleSave = () => {
     toast.success('Scenario saved & published', {
-      description: `${selectedIds.size} producers in the current selection.`,
+      description: `${pushZones.length} push zone${pushZones.length === 1 ? '' : 's'}, ${filters.length} filter${filters.length === 1 ? '' : 's'}.`,
     });
   };
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-background">
       <MapSelectionTopBar
         scenarioTitle={SCENARIO_TITLE}
-        activeTab="select"
-        onTabChange={handleTabChange}
-        onBack={() => navigate('/')}
+        onArchive={handleArchive}
         onSave={handleSave}
       />
 
@@ -171,17 +161,6 @@ export default function MapSelectionPage() {
             className="absolute inset-0"
             style={{ pointerEvents: overlayPointerEvents }}
           />
-
-          <MapSelectionToolbar
-            tool={tool}
-            onToolChange={setTool}
-            onClear={clear}
-            selectedCount={selectedIds.size}
-          />
-
-          <div className="absolute top-4 left-20 z-10">
-            <SelectionLayersPanel layers={layers} onRemoveLayer={removeLayer} />
-          </div>
 
           {loading && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60 backdrop-blur-sm">
@@ -199,34 +178,61 @@ export default function MapSelectionPage() {
           )}
         </div>
 
-        {/* Right rail: filters → routing → results */}
-        <aside className="hidden w-80 flex-col overflow-y-auto border-l border-border md:flex">
-          <ProducerFiltersPanel
-            filters={filters}
-            onToggleAccountType={toggleAccountType}
-            onSetSpottedWindow={setSpottedWindow}
-            onSetContactedWindow={setContactedWindow}
-            eligibleCount={eligibleIds.size}
-            totalCount={producers.length}
-          />
-          <OriginatorRoutingPanel
-            originators={originators}
-            filters={filters}
-            producerCountsByOriginator={producerCountsByOriginator}
-            visibleProducerCount={visibleByOriginatorCount}
-            onToggleOriginator={toggleOriginator}
-            onSelectAll={() => selectAllOriginators(originators.map((o) => o.id))}
-            onClearAll={clearAllOriginators}
-          />
-          <div className="flex-1 min-h-0">
-            <SelectedProducersPanel
-              producers={selectedProducers}
-              onRemove={removeProducer}
-              originators={originators}
-              eligibleIds={eligibleIds}
-            />
-          </div>
-        </aside>
+        {/* Right rail: collapsible tabbed panel */}
+        <CollapsibleRightPanel
+          open={panelOpen}
+          onOpenChange={setPanelOpen}
+          width={384}
+          ariaLabel="selection panel"
+        >
+          <Tabs
+            value={panelTab}
+            onValueChange={(value) => {
+              if (value === 'producers' || value === 'originators') {
+                setPanelTab(value);
+              }
+            }}
+            className="flex h-full flex-col"
+          >
+            <div className="border-b border-border px-4">
+              <TabsList variant="line">
+                <TabsTrigger value="producers" className="after:bottom-0 after:bg-primary">
+                  Producer Selection
+                </TabsTrigger>
+                <TabsTrigger value="originators" className="after:bottom-0 after:bg-primary">
+                  Originator Assignments
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="producers" className="min-h-0 flex-1 overflow-y-auto">
+              <ProducerSelectionPanel
+                producers={producers}
+                pushZones={pushZones}
+                filters={filters}
+                isDrawing={isDrawing || tool === 'push_zone'}
+                onDrawPushZone={handleDrawPushZone}
+                onRemovePushZone={removePushZone}
+                onAddFilter={addFilter}
+                onUpdateFilter={updateFilter}
+                onRemoveFilter={removeFilter}
+                onSelectionChange={handleSelectionChange}
+              />
+            </TabsContent>
+
+            <TabsContent
+              value="originators"
+              className="min-h-0 flex-1 overflow-y-auto px-4 py-6"
+            >
+              <div className="rounded-md border border-dashed border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
+                Originator Assignments will live here.
+                <div className="mt-1 text-xs">
+                  Coming once the producer selection feeds in.
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CollapsibleRightPanel>
       </div>
     </div>
   );
