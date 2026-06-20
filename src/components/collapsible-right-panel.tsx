@@ -45,18 +45,18 @@ export function CollapsibleRightPanel({
         aria-label={open ? 'Collapse ' + ariaLabel : 'Expand ' + ariaLabel}
         aria-expanded={open}
         className={cn(
-          'pointer-events-auto absolute top-1/2 -left-6 z-10 flex h-14 w-6 -translate-y-1/2 cursor-pointer items-center justify-center',
-          'rounded-l-md border border-r-0 border-border bg-background text-muted-foreground shadow-md',
+          'pointer-events-auto absolute top-1/2 -left-5 z-10 flex h-12 w-5 -translate-y-1/2 cursor-pointer items-center justify-center',
+          'rounded-l-md border border-r-0 border-border bg-card text-muted-foreground shadow-sm',
           'transition-colors hover:bg-accent hover:text-foreground',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1'
         )}
       >
-        <Icon path={open ? mdiMenuRight : mdiMenuLeft} className='size-4' />
+        <Icon path={open ? mdiMenuRight : mdiMenuLeft} className='size-3.5' />
       </button>
 
       <aside
         className={cn(
-          'pointer-events-auto flex h-full w-full flex-col overflow-hidden border-l border-border bg-background',
+          'pointer-events-auto flex h-full w-full flex-col overflow-hidden border-l border-border bg-background shadow-sm',
           className
         )}
       >

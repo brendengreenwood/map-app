@@ -33,36 +33,36 @@ export function PushZoneSection({
   const drawnRows = zoneRows.slice(1);
 
   return (
-    <section className="border-t border-border px-4 py-3">
-      <div className="flex items-center justify-between gap-2 pb-2">
-        <div className="flex items-center gap-2">
-          <Icon path={mdiVectorPolygon} className="size-4 text-muted-foreground" />
-          <h3 className="text-xs font-semibold tracking-wider text-foreground uppercase">
-            Select Push Zone
+    <section className="border-b border-border px-5 py-4">
+      <header className="flex items-center justify-between gap-2 pb-3">
+        <div className="flex items-baseline gap-2">
+          <Icon path={mdiVectorPolygon} className="size-3.5 text-muted-foreground" />
+          <h3 className="text-[10.5px] font-mono uppercase tracking-[0.08em] text-foreground">
+            Select push zone
           </h3>
-          <span className="text-xs text-muted-foreground">draw to add producers</span>
+          <span className="text-[11px] text-muted-foreground">draw to add producers</span>
         </div>
-        <span className="text-sm tabular-nums text-muted-foreground">
+        <span className="text-[13px] font-medium tabular-nums text-muted-foreground">
           {formatCount(selectedByArea)}
         </span>
-      </div>
+      </header>
 
-      <div className="pb-2">
+      <div className="pb-3">
         <Button
           variant={isDrawing ? 'default' : 'outline'}
           size="sm"
-          className={cn('gap-2', isDrawing && 'ring-2 ring-primary/40')}
+          className={cn('w-full justify-start gap-2', isDrawing && 'ring-2 ring-primary/30')}
           onClick={onDrawPushZone}
         >
           <Icon path={mdiVectorPolygon} className="size-4" />
-          Draw push zone
-          <span className="ml-1 text-xs font-normal text-muted-foreground">
+          <span>Draw push zone</span>
+          <span className="ml-auto text-[11px] font-normal opacity-70">
             adds to selection
           </span>
         </Button>
       </div>
 
-      <div className="divide-y divide-border/60">
+      <div className="space-y-0.5">
         {baselineRow && (
           <PushZoneRow
             label={baselineRow.label}
@@ -82,12 +82,17 @@ export function PushZoneSection({
       </div>
 
       {/* Transition row */}
-      <div className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground">
-        <span className="tabular-nums">{formatCount(selectedByArea)}</span>
+      <div className="mt-3 flex items-center gap-2 border-t border-border/60 pt-3 text-[11.5px] text-muted-foreground">
+        <span className="font-medium tabular-nums text-foreground">{formatCount(selectedByArea)}</span>
         <Icon path={mdiArrowDown} className="size-3" />
         <span>then narrow by attribute</span>
-        <span className="ml-auto tabular-nums">
-          {removedByFilters > 0 ? `-${removedByFilters.toLocaleString()}` : '—'}
+        <span
+          className={cn(
+            'ml-auto tabular-nums',
+            removedByFilters > 0 && 'font-medium text-error-700 dark:text-error-300'
+          )}
+        >
+          {removedByFilters > 0 ? `−${removedByFilters.toLocaleString()}` : '—'}
         </span>
       </div>
     </section>

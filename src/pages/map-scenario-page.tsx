@@ -2,13 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Icon } from '@/components/ui/icon';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mdiLoading, mdiPlus, mdiMinus } from '@mdi/js';
+import { mdiLoading, mdiPlus, mdiMinus, mdiAccountGroupOutline } from '@mdi/js';
+import { Button } from '@/components/ui/button';
 import { useUsers } from '@/hooks/use-users';
 import { useScenarioMap, CARGILL_SIDNEY } from '@/hooks/use-scenario-map';
 import { useMapSelection, type PushZone } from '@/hooks/use-map-selection';
 import { useScenarioMarket } from '@/hooks/use-scenario-market';
 import { useScenarioSelection } from '@/hooks/use-scenario-selection';
 import { ProducerSelectionPanel } from '@/components/producer-selection/producer-selection-panel';
+import { OriginatorAssignmentsPanel } from '@/components/originator-assignments-panel';
 import { MapSelectionTopBar } from '@/components/map-selection-top-bar';
 import { CollapsibleLeftPanel } from '@/components/collapsible-left-panel';
 import { CollapsibleRightPanel } from '@/components/collapsible-right-panel';
@@ -65,6 +67,8 @@ export default function MapScenarioPage() {
   const [producersLoading, setProducersLoading] = useState(true);
   const [producersError, setProducersError] = useState<string | null>(null);
   const [panelTab, setPanelTab] = useState<PanelTab>('producers');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [originatorOverrides, setOriginatorOverrides] = useState<Map<string, string | null>>(() => new Map());
 
   // --- Rail open/closed state (persisted) ----------------------------------
   const [leftPanelOpen, setLeftPanelOpen] = useState<boolean>(() => {
@@ -263,6 +267,7 @@ export default function MapScenarioPage() {
   const handleSelectionChange = useCallback(
     (finalIds: Set<string>) => {
       setSelected(finalIds);
+      setSelectedIds(finalIds);
     },
     [setSelected]
   );
@@ -270,6 +275,31 @@ export default function MapScenarioPage() {
   const handleDrawPushZone = useCallback(() => {
     setTool('push_zone');
   }, [setTool]);
+
+  const selectedProducers = useMemo(
+    () => producers.filter((p) => selectedIds.has(p.id)),
+    [producers, selectedIds]
+  );
+
+  const handleAssignmentChange = useCallback(
+    (producerId: string, originatorId: string | null) => {
+      setOriginatorOverrides((prev) => {
+        const next = new Map(prev);
+        next.set(producerId, originatorId);
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleRemoveProducerFromAssignments = useCallback((producerId: string) => {
+    setSelectedIds((prev) => {
+      if (!prev.has(producerId)) return prev;
+      const next = new Set(prev);
+      next.delete(producerId);
+      return next;
+    });
+  }, []);
 
   const overlayPointerEvents = tool === 'none' ? 'none' : 'auto';
 
@@ -329,7 +359,9 @@ export default function MapScenarioPage() {
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-background">
       <MapSelectionTopBar
+        crumbs={['Scenarios', SCENARIO_TITLE]}
         scenarioTitle={SCENARIO_TITLE}
+        subtitle={`${(market.setup.commodity ?? 'corn').toString().replace(/^./, (c) => c.toUpperCase())} · ${market.setup.contractCode ?? ''} · ${competitors.length} competitor${competitors.length === 1 ? '' : 's'} in range`}
         onArchive={handleArchive}
         onSave={handleSave}
       />
@@ -361,15 +393,21 @@ export default function MapScenarioPage() {
 
           {/* Competitors toggle pill — floats at top of map, just right of the open left rail */}
           {leftPanelOpen && (
-            <button
+            <Button
               type="button"
+              variant={showCompetitors ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setShowCompetitors((v) => !v)}
               aria-pressed={showCompetitors}
-              className="pointer-events-auto absolute top-4 z-20 inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-md transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="pointer-events-auto absolute top-4 z-20 gap-2 rounded-full shadow-md"
               style={{ left: LEFT_WIDTH + 16 }}
             >
-              Competitors ({competitors.length})
-            </button>
+              <Icon path={mdiAccountGroupOutline} className="size-4" />
+              Competitors
+              <span className="ml-0.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10.5px] font-medium tabular-nums">
+                {competitors.length}
+              </span>
+            </Button>
           )}
         </div>
 
@@ -419,22 +457,26 @@ export default function MapScenarioPage() {
           ariaLabel="selection panel"
           controls={
             <>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="icon-sm"
                 onClick={zoomIn}
                 aria-label="Zoom in"
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-md transition-colors hover:bg-accent hover:text-foreground"
+                className="shadow-md"
               >
                 <Icon path={mdiPlus} className="size-4" />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
+                size="icon-sm"
                 onClick={zoomOut}
                 aria-label="Zoom out"
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-md transition-colors hover:bg-accent hover:text-foreground"
+                className="shadow-md"
               >
                 <Icon path={mdiMinus} className="size-4" />
-              </button>
+              </Button>
             </>
           }
         >
@@ -473,16 +515,14 @@ export default function MapScenarioPage() {
               />
             </TabsContent>
 
-            <TabsContent
-              value="originators"
-              className="min-h-0 flex-1 overflow-y-auto px-4 py-6"
-            >
-              <div className="rounded-md border border-dashed border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
-                Originator Assignments will live here.
-                <div className="mt-1 text-xs">
-                  Coming once the producer selection feeds in.
-                </div>
-              </div>
+            <TabsContent value="originators" className="min-h-0 flex-1 overflow-y-auto">
+              <OriginatorAssignmentsPanel
+                selectedProducers={selectedProducers}
+                originators={originators}
+                assignments={originatorOverrides}
+                onAssignmentChange={handleAssignmentChange}
+                onRemoveProducer={handleRemoveProducerFromAssignments}
+              />
             </TabsContent>
           </Tabs>
         </CollapsibleRightPanel>

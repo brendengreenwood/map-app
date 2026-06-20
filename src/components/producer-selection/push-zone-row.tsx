@@ -20,23 +20,35 @@ function formatDelta(delta: number | null, variant: 'baseline' | 'drawn'): strin
 
 export function PushZoneRow({ label, delta, variant, onRemove }: PushZoneRowProps) {
   return (
-    <div className="flex items-center gap-2 py-1.5">
+    <div
+      className={cn(
+        'group flex items-center gap-2.5 rounded-md px-2 py-1.5 -mx-2',
+        'transition-colors hover:bg-accent/50'
+      )}
+    >
       <Icon
         path={variant === 'baseline' ? mdiCircleOutline : mdiPlusCircleOutline}
         className={cn(
           'size-4 shrink-0',
-          variant === 'baseline' ? 'text-foreground' : 'text-muted-foreground'
+          variant === 'baseline' ? 'text-muted-foreground' : 'text-primary'
         )}
       />
       <span className="flex-1 truncate text-sm">{label}</span>
-      <span className="text-sm tabular-nums text-muted-foreground">
+      <span
+        className={cn(
+          'text-sm tabular-nums',
+          variant === 'drawn' && delta != null
+            ? 'font-medium text-success-700 dark:text-success-300'
+            : 'text-muted-foreground'
+        )}
+      >
         {formatDelta(delta, variant)}
       </span>
       {variant === 'drawn' && onRemove ? (
         <Button
           variant="ghost"
-          size="sm"
-          className="size-7 p-0"
+          size="icon-sm"
+          className="opacity-0 transition-opacity group-hover:opacity-100"
           onClick={onRemove}
           aria-label={`Remove ${label}`}
         >

@@ -1,5 +1,10 @@
 import type { ConfigureCompetitor } from '@/lib/api';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Icon } from '@/components/ui/icon';
+import { mdiArrowLeft, mdiRefresh } from '@mdi/js';
 
 interface ConfigureCompetitorsPanelProps {
   competitors: ConfigureCompetitor[];
@@ -10,7 +15,10 @@ interface ConfigureCompetitorsPanelProps {
   onBack?: () => void;
 }
 
-function effectivePosted(c: ConfigureCompetitor, overrides: Record<string, number>): number | null {
+function effectivePosted(
+  c: ConfigureCompetitor,
+  overrides: Record<string, number>
+): number | null {
   if (c.id in overrides) return overrides[c.id];
   return c.posted;
 }
@@ -26,22 +34,30 @@ export function ConfigureCompetitorsPanel({
   const editedCount = Object.keys(overrides).length;
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-border px-4 py-3">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+      <div className="border-b border-border px-5 py-4">
         <div className="flex items-center gap-2">
           {onBack && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={onBack}
-              className="-ml-1 inline-flex h-6 items-center rounded px-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="-ml-1"
               aria-label="Back to Market Setup"
             >
-              ← Back
-            </button>
+              <Icon path={mdiArrowLeft} className="size-4" />
+            </Button>
           )}
-          <h2 className="text-sm font-semibold">Competitors</h2>
+          <div className="min-w-0">
+            <p className="text-[10.5px] font-mono uppercase tracking-[0.08em] text-primary">
+              Reference
+            </p>
+            <h2 className="mt-0.5 text-base font-semibold tracking-tight">
+              Competitors
+            </h2>
+          </div>
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground">
           {loading
             ? 'Loading…'
             : `${competitors.length} in region${editedCount ? ` · ${editedCount} edited` : ''}`}
@@ -60,30 +76,37 @@ export function ConfigureCompetitorsPanel({
               const isEdited = c.id in overrides;
               const distance = c.distance_miles.toFixed(1);
               return (
-                <li key={c.id} className="px-4 py-2.5">
+                <li
+                  key={c.id}
+                  className="group px-5 py-3 transition-colors hover:bg-muted/40"
+                >
                   <div className="flex items-start justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => onFlyTo(c.id)}
-                      className="flex-1 text-left text-sm font-medium hover:underline"
+                      className="min-w-0 flex-1 truncate text-left text-sm font-medium text-foreground hover:underline"
                     >
                       {c.name}
                     </button>
-                    {c.stale && !isEdited && (
-                      <span className="rounded bg-yellow-500/15 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-300">
-                        stale
-                      </span>
-                    )}
-                    {isEdited && (
-                      <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                        edited
-                      </span>
-                    )}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {isEdited && (
+                        <Badge variant="info" className="px-1.5 py-0 text-[10px]">
+                          Edited
+                        </Badge>
+                      )}
+                      {c.stale && !isEdited && (
+                        <Badge variant="warning" className="px-1.5 py-0 text-[10px]">
+                          Stale
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span>{distance} mi</span>
-                    <div className="flex items-center gap-1">
-                      <input
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                      {distance} mi
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Input
                         type="number"
                         value={posted ?? ''}
                         placeholder="—"
@@ -96,18 +119,19 @@ export function ConfigureCompetitorsPanel({
                             onBidChange(c.id, Number.isFinite(n) ? Math.round(n) : 0);
                           }
                         }}
-                        className="w-20 rounded border border-input bg-transparent px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className="h-8 w-20 text-right text-xs"
                       />
-                      <span>¢</span>
+                      <span className="text-xs text-muted-foreground">¢</span>
                       {isEdited && (
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => onBidChange(c.id, null)}
-                          className="ml-1 text-[10px] text-muted-foreground hover:text-foreground"
+                          aria-label="Reset to source value"
                           title="Reset to source value"
                         >
-                          ↺
-                        </button>
+                          <Icon path={mdiRefresh} className="size-3.5" />
+                        </Button>
                       )}
                     </div>
                   </div>

@@ -26,19 +26,25 @@ export function LastContactFilterCard({
   onRemove,
 }: LastContactFilterCardProps) {
   return (
-    <div className="rounded-md border border-border bg-card/60 p-3">
-      <div className="flex items-center gap-2 pb-2">
-        <span className="grid size-7 place-items-center rounded-sm bg-muted/60">
+    <div className="group rounded-lg border border-border bg-card p-3 shadow-2xs transition-colors hover:border-border/80">
+      <div className="flex items-center gap-2 pb-2.5">
+        <span className="grid size-7 shrink-0 place-items-center rounded-md bg-muted">
           <Icon path={mdiFilterOutline} className="size-4 text-muted-foreground" />
         </span>
-        <span className="flex-1 text-sm font-medium">Last contact</span>
-        <span className="text-sm tabular-nums text-muted-foreground">
-          {delta > 0 ? `-${delta.toLocaleString()}` : '—'}
+        <span className="flex-1 truncate text-sm font-medium">Last contact</span>
+        <span
+          className={
+            delta > 0
+              ? 'text-sm font-medium tabular-nums text-error-700 dark:text-error-300'
+              : 'text-sm tabular-nums text-muted-foreground'
+          }
+        >
+          {delta > 0 ? `−${delta.toLocaleString()}` : '—'}
         </span>
         <Button
           variant="ghost"
-          size="sm"
-          className="size-7 p-0"
+          size="icon-sm"
+          className="opacity-0 transition-opacity group-hover:opacity-100"
           onClick={onRemove}
           aria-label="Remove filter"
         >
@@ -71,7 +77,7 @@ export function LastContactFilterCard({
           }}
           className="h-8 w-20 tabular-nums"
         />
-        <span className="text-sm text-muted-foreground">d</span>
+        <span className="text-sm text-muted-foreground">days</span>
       </div>
     </div>
   );

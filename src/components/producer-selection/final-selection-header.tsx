@@ -18,16 +18,37 @@ export function FinalSelectionHeader({
   removedByFilters,
 }: FinalSelectionHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4 px-4 pt-4 pb-3">
-      <div>
-        <div className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-          Final Selection
+    <div className="border-b border-border bg-card/30 px-5 py-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[10.5px] font-mono uppercase tracking-[0.08em] text-primary">
+            Result
+          </p>
+          <h2 className="mt-1 text-sm font-semibold tracking-tight text-foreground">
+            Final selection
+          </h2>
+          <p className="mt-2 text-[34px] font-semibold leading-none tracking-tight tabular-nums">
+            {formatCount(finalCount)}
+          </p>
         </div>
-        <div className="text-3xl font-semibold tabular-nums">{formatCount(finalCount)}</div>
-      </div>
-      <div className="pt-4 text-right text-xs leading-relaxed text-muted-foreground tabular-nums">
-        <div>{formatCount(selectedByArea)} selected by area</div>
-        <div>-{removedByFilters.toLocaleString()} removed by filters</div>
+        <dl className="grid gap-1 pt-1 text-right text-[11.5px] leading-relaxed text-muted-foreground tabular-nums">
+          <div className="flex items-center justify-end gap-2">
+            <dt>Selected by area</dt>
+            <dd className="font-medium text-foreground">{formatCount(selectedByArea)}</dd>
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <dt>Removed by filters</dt>
+            <dd
+              className={
+                removedByFilters > 0
+                  ? 'font-medium text-error-700 dark:text-error-300'
+                  : 'font-medium text-foreground'
+              }
+            >
+              −{removedByFilters.toLocaleString()}
+            </dd>
+          </div>
+        </dl>
       </div>
     </div>
   );

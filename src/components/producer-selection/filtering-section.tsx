@@ -43,50 +43,56 @@ export function FilteringSection({
   };
 
   return (
-    <section className="border-t border-border px-4 py-3">
-      <div className="flex items-center justify-between gap-2 pb-3">
-        <div className="flex items-center gap-2">
-          <Icon path={mdiFilterOutline} className="size-4 text-muted-foreground" />
-          <h3 className="text-xs font-semibold tracking-wider text-foreground uppercase">
+    <section className="px-5 py-4">
+      <header className="flex items-center justify-between gap-2 pb-3">
+        <div className="flex items-baseline gap-2">
+          <Icon path={mdiFilterOutline} className="size-3.5 text-muted-foreground" />
+          <h3 className="text-[10.5px] font-mono uppercase tracking-[0.08em] text-foreground">
             Filtering
           </h3>
-          <span className="text-xs text-muted-foreground">by attribute</span>
+          <span className="text-[11px] text-muted-foreground">by attribute</span>
         </div>
-        <span className="text-sm tabular-nums text-muted-foreground">
+        <span className="text-[13px] font-medium tabular-nums text-muted-foreground">
           {formatCount(finalCount)}
         </span>
-      </div>
+      </header>
 
-      <div className="space-y-2">
-        {filters.map((filter) => (
-          <FilterCard
-            key={filter.id}
-            filter={filter}
-            delta={deltaById.get(filter.id) ?? 0}
-            onChange={(patch) => onUpdateFilter(filter.id, patch)}
-            onRemove={() => onRemoveFilter(filter.id)}
-          />
-        ))}
-      </div>
+      {filters.length > 0 ? (
+        <div className="space-y-2">
+          {filters.map((filter) => (
+            <FilterCard
+              key={filter.id}
+              filter={filter}
+              delta={deltaById.get(filter.id) ?? 0}
+              onChange={(patch) => onUpdateFilter(filter.id, patch)}
+              onRemove={() => onRemoveFilter(filter.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-md border border-dashed border-border/80 bg-muted/30 px-3 py-4 text-center text-[12px] text-muted-foreground">
+          No filters applied. The full push zone selection is included.
+        </p>
+      )}
 
       <div className="mt-3 flex justify-center">
         <Popover open={menuOpen} onOpenChange={setMenuOpen}>
           <PopoverTrigger
             render={
-              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
                 <Icon path={mdiPlus} className="size-4" />
                 Add filter
                 <Icon path={mdiMenuDown} className="size-4" />
               </Button>
             }
           />
-          <PopoverContent className="w-48 p-1" align="center">
+          <PopoverContent className="w-52 p-1" align="center">
             <div className="flex flex-col">
               {ADDABLE_FILTER_TYPES.map((entry) => (
                 <button
                   key={entry.type}
                   type="button"
-                  className="rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+                  className="rounded-sm px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-accent"
                   onClick={() => handleAdd(entry.type)}
                 >
                   {entry.label}
